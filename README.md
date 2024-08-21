@@ -48,7 +48,7 @@ WebRTC library which does not have a working Bazel build.
 Below is an abbreviated version of what’s explained in the
 [webrtc docs](https://webrtc.github.io/webrtc-org/native-code/development/):
 
-```
+```sh
 $ cd ~
 $ mkdir src
 $ cd src
@@ -83,13 +83,13 @@ webrtc_path = "/usr/local/google/home/pareynolds/src/webrtc-checkout/"
 Once libwebrtc is built and the `WORKSPACE` file is updated, you'll run your
 Bazel build in much the same manner as for the web implementation:
 
-```
+```sh
 $ bazel build //native/...
 ```
 
 You can also run the tests:
 
-```
+```sh
 $ bazel test //native/...
 ```
 
