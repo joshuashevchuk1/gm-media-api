@@ -58,10 +58,9 @@ $ mkdir webrtc-checkout
 $ cd webrtc-checkout
 $ fetch --nohooks webrtc
 $ gclient sync
-$ ./webrtc-checkout/webrtc/build/install-build-deps.sh
-$ cd webrtc-checkout
 $ mv src webrtc
 $ cd webrtc
+$ ./build/install-build-deps.sh
 $ gn gen out/Default --args='is_debug=false use_custom_libcxx=false rtc_include_tests=false rtc_build_examples=false dcheck_always_on=true rtc_use_x11=false use_rtti=true'
 $ ninja -C out/Default
 ```
