@@ -107,6 +107,8 @@ For the native client, we can use https://developers.google.com/identity/protoco
 
 > **Note:** You must give the service account the role of "Service Account Token Creator"
 
+> **Note:** For service accounts to get user data, the account must impersonate users. In order to this, the admin of the domain must give domain-wide delegation of authority. Please see https://developers.google.com/meet/api/guides/authenticate-authorize#domain-wide-delegation.
+
 > **Note:** Some documentation will encourage you to generate tokens with https://developers.google.com/oauthplayground. However, you will not be able to connect to the API if you retrieve an OAuth token this way because it is not associated with a cloud project.
 
 ### Running native C++ client samples
