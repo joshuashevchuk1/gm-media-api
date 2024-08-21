@@ -53,7 +53,7 @@ $ cd ~
 $ mkdir src
 $ cd src
 $ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-$ export PATH=/path/to/home/src/depot_tools:$PATH
+$ export PATH=~/src/depot_tools:$PATH
 $ mkdir webrtc-checkout
 $ cd webrtc-checkout
 $ fetch --nohooks webrtc
