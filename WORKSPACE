@@ -15,8 +15,6 @@
 workspace(name = "media_api_samples")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "yarn_install")
-load("@build_bazel_rules_nodejs//:repositories.bzl", "build_bazel_rules_nodejs_dependencies")
 
 # See README.md - Replace this with the local path to your WebRTC checkout.
 webrtc_path = "/usr/local/google/home/pareynolds/src/webrtc-checkout/"
@@ -38,10 +36,11 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/5.8.2/rules_nodejs-5.8.2.tar.gz"],
 )
 
+load("@build_bazel_rules_nodejs//:repositories.bzl", "build_bazel_rules_nodejs_dependencies")
 build_bazel_rules_nodejs_dependencies()
 
+load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "yarn_install")
 node_repositories()
-
 yarn_install(
     name = "npm",
     package_json = "@//:package.json",
@@ -67,6 +66,7 @@ http_archive(
     strip_prefix = "googletest-1.13.0",
     url = "https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz",
 )
+
 
 # === JSON ===
 
@@ -101,9 +101,9 @@ http_archive(
 
 http_archive(
     name = "curl",
-    build_file = "curl.BUILD",
-    strip_prefix = "curl-8.9.1",
     urls = ["https://curl.se/download/curl-8.9.1.tar.gz"],
+    strip_prefix = "curl-8.9.1",
+    build_file = "curl.BUILD",
 )
 
 http_archive(
@@ -117,12 +117,12 @@ http_archive(
 # Note: This is intended to point to a local build of WebRTC.
 new_local_repository(
     name = "webrtc",
-    build_file = "webrtc.BUILD",
     path = webrtc_path,
+    build_file = "webrtc.BUILD",
 )
 
 new_local_repository(
     name = "boringssl",
-    build_file = "boringssl.BUILD",
     path = webrtc_path + "webrtc/third_party/boringssl/src",
+    build_file = "boringssl.BUILD",
 )
