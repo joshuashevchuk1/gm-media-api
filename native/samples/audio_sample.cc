@@ -33,13 +33,13 @@
 
 ABSL_FLAG(std::string, output_file_prefix, "/tmp/audio_sink_ssrc_",
           "Path prefix where files will be written. The file name will be "
-          "prefix_<ssrc>.txt.");
+          "prefix_<ssrc>_audio.pcm.");
 
 ABSL_FLAG(std::string, meet_api_url,
           "https://meet.googleapis.com/v2beta/",
           "The base URL to use for the Meet API.");
 
-ABSL_FLAG(std::string, meeting_space_id, "0yvUsuZOKqUB",
+ABSL_FLAG(std::string, meeting_space_id, "",
           "The ID of the meeting space to connect to.");
 
 ABSL_FLAG(std::string, oauth_token, "",
