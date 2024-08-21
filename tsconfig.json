@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "declaration": true,
+    "esModuleInterop": true,
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "isolatedModules": true,
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strict": true,
+    "rootDirs": [
+      ".",
+      "./bazel-out/darwin_arm64-dbg/bin",
+      "./bazel-out/darwin_arm64-fastbuild/bin",
+      "./bazel-out/darwin_arm64-opt/bin",
+      "./bazel-out/darwin-dbg/bin",
+      "./bazel-out/darwin-fastbuild/bin",
+      "./bazel-out/darwin-opt/bin",
+      "./bazel-out/host/bin",
+      "./bazel-out/k8-dbg/bin",
+      "./bazel-out/k8-fastbuild-ST-4a519fd6d3e4/bin",
+      "./bazel-out/k8-fastbuild/bin",
+      "./bazel-out/k8-opt/bin",
+      "./bazel-out/x64_windows-dbg/bin",
+      "./bazel-out/x64_windows-fastbuild/bin",
+      "./bazel-out/x64_windows-opt/bin"
+    ]
+  },
+  "exclude": [
+    "./_bazel_bin",
+    "./_bazel_buildbot",
+    "./_bazel_out",
+    "./_bazel_testlogs"
+  ]
+}

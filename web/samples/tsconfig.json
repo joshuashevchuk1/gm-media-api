@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+      "target": "es2015",
+      "module": "commonjs",
+      "outDir": "./dist",
+      "sourceMap": true,
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,
+      "noImplicitAny": true,
+      "noUnusedParameters": true,
+      "noImplicitReturns": true,
+      "noFallthroughCasesInSwitch": true,
+      "types": [],
+      "lib": ["esnext", "dom"],
+      "baseUrl": ".",
+      "paths": {
+        "*": ["../*"]
+      }
+  }
+}
