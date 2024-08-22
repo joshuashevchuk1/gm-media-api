@@ -122,10 +122,11 @@ class CurlRequest {
     switch (method) {
       case Method::kPost:
         return CURLOPT_POST;
-      case Method::kGet:
-        return CURLOPT_HTTPGET;
       case Method::kPut:
         return CURLOPT_UPLOAD;
+      case Method::kGet:
+      default:
+        return CURLOPT_HTTPGET;
     }
   }
 
