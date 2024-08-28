@@ -18,10 +18,26 @@
  * @fileoverview A class to handle the media stats channel.
  */
 
-import {MediaApiResponseStatus, MediaStatsChannelFromClient, MediaStatsChannelToClient, MediaStatsResource, StatsSectionData, UploadMediaStatsRequest, UploadMediaStatsResponse} from '../../types/datachannels';
+import {
+  MediaApiResponseStatus,
+  MediaStatsChannelFromClient,
+  MediaStatsChannelToClient,
+  MediaStatsResource,
+  StatsSectionData,
+  UploadMediaStatsRequest,
+  UploadMediaStatsResponse,
+} from '../../types/datachannels';
+import {LogLevel} from '../../types/mediatypes';
+import {ChannelLogger} from './channel_logger';
 
-type SupportedMediaStatsTypes = 'codec'|'candidate-pair'|'media-playout'|
-    'transport'|'local-candidate'|'remote-candidate'|'inbound-rtp';
+type SupportedMediaStatsTypes =
+  | 'codec'
+  | 'candidate-pair'
+  | 'media-playout'
+  | 'transport'
+  | 'local-candidate'
+  | 'remote-candidate'
+  | 'inbound-rtp';
 
 const STATS_TYPE_CONVERTER: {[key: string]: string} = {
   'codec': 'codec',
@@ -46,14 +62,17 @@ export class MediaStatsChannelHandler {
    */
   private readonly allowlist = new Map<string, string[]>();
   private requestId = 1;
-  private readonly pendingRequestResolveMap =
-      new Map<number, ((value: MediaApiResponseStatus) => void)>();
+  private readonly pendingRequestResolveMap = new Map<
+    number,
+    (value: MediaApiResponseStatus) => void
+  >();
   /** Id for the interval to send media stats. */
   private intervalId = 0;
 
   constructor(
-      private readonly channel: RTCDataChannel,
-      private readonly peerConnection: RTCPeerConnection,
+    private readonly channel: RTCDataChannel,
+    private readonly peerConnection: RTCPeerConnection,
+    private readonly channelLogger?: ChannelLogger,
   ) {
     this.channel.onmessage = (event) => {
       this.onMediaStatsMessage(event);
@@ -61,11 +80,15 @@ export class MediaStatsChannelHandler {
     this.channel.onclose = () => {
       clearInterval(this.intervalId);
       this.intervalId = 0;
+      this.channelLogger?.log(LogLevel.MESSAGES, 'Media stats channel: closed');
       // Resolve all pending requests with an error.
       for (const [, resolve] of this.pendingRequestResolveMap) {
         resolve({code: 400, message: 'Channel closed', details: []});
       }
       this.pendingRequestResolveMap.clear();
+    };
+    this.channel.onopen = () => {
+      this.channelLogger?.log(LogLevel.MESSAGES, 'Media stats channel: opened');
     };
   }
 
@@ -80,6 +103,11 @@ export class MediaStatsChannelHandler {
   }
 
   private onMediaStatsResponse(response: UploadMediaStatsResponse) {
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Media stats channel: response received',
+      response,
+    );
     const resolve = this.pendingRequestResolveMap.get(response.requestId);
     if (resolve) {
       resolve(response.status);
@@ -89,15 +117,32 @@ export class MediaStatsChannelHandler {
 
   private onMediaStatsResources(resources: MediaStatsResource[]) {
     // We expect only one resource to be sent.
+    if (resources.length > 1) {
+      resources.forEach((resource) => {
+        this.channelLogger?.log(
+          LogLevel.ERRORS,
+          'Media stats channel: more than one resource received',
+          resource,
+        );
+      });
+    }
     const resource = resources[0];
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Media stats channel: resource received',
+      resource,
+    );
     if (resource.configuration) {
       for (const [key, value] of Object.entries(
-               resource.configuration.allowlist)) {
+        resource.configuration.allowlist,
+      )) {
         this.allowlist.set(key, value.keys);
       }
       // We want to stop the interval if the upload interval is zero
-      if (this.intervalId &&
-          resource.configuration.uploadIntervalSeconds === 0) {
+      if (
+        this.intervalId &&
+        resource.configuration.uploadIntervalSeconds === 0
+      ) {
         clearInterval(this.intervalId);
         this.intervalId = 0;
       }
@@ -108,9 +153,15 @@ export class MediaStatsChannelHandler {
           clearInterval(this.intervalId);
         }
         this.intervalId = setInterval(
-            this.sendMediaStats.bind(this),
-            resource.configuration.uploadIntervalSeconds * 1000);
+          this.sendMediaStats.bind(this),
+          resource.configuration.uploadIntervalSeconds * 1000,
+        );
       }
+    } else {
+      this.channelLogger?.log(
+        LogLevel.ERRORS,
+        'Media stats channel: resource received without configuration',
+      );
     }
   }
 
@@ -119,45 +170,72 @@ export class MediaStatsChannelHandler {
     const requestStats: StatsSectionData[] = [];
 
     stats.forEach(
-        (report: RTCTransportStats|RTCIceCandidatePairStats|
-         RTCOutboundRtpStreamStats|RTCInboundRtpStreamStats) => {
-          const statsType = report.type as SupportedMediaStatsTypes;
-          if (statsType && this.allowlist.has(report.type)) {
-            const filteredMediaStats: {[key: string]: string|number} = {};
-            Object.entries(report).forEach((entry) => {
-              // id is not accepted with other stats. It is populated in the top
-              // level section.
-              if (this.allowlist.get(report.type)?.includes(entry[0]) &&
-                  entry[0] !== 'id') {
-                // We want to convert the camel case to underscore.
-                filteredMediaStats[this.camelToUnderscore(entry[0])] = entry[1];
-              }
-            });
-            const filteredMediaStatsDictionary = {
-              'id': report.id,
-              [STATS_TYPE_CONVERTER[report.type as string]]: filteredMediaStats,
-            };
-            const filteredStatsSectionData =
-                filteredMediaStatsDictionary as StatsSectionData;
+      (
+        report:
+          | RTCTransportStats
+          | RTCIceCandidatePairStats
+          | RTCOutboundRtpStreamStats
+          | RTCInboundRtpStreamStats,
+      ) => {
+        const statsType = report.type as SupportedMediaStatsTypes;
+        if (statsType && this.allowlist.has(report.type)) {
+          const filteredMediaStats: {[key: string]: string | number} = {};
+          Object.entries(report).forEach((entry) => {
+            // id is not accepted with other stats. It is populated in the top
+            // level section.
+            if (
+              this.allowlist.get(report.type)?.includes(entry[0]) &&
+              entry[0] !== 'id'
+            ) {
+              // We want to convert the camel case to underscore.
+              filteredMediaStats[this.camelToUnderscore(entry[0])] = entry[1];
+            }
+          });
+          const filteredMediaStatsDictionary = {
+            'id': report.id,
+            [STATS_TYPE_CONVERTER[report.type as string]]: filteredMediaStats,
+          };
+          const filteredStatsSectionData =
+            filteredMediaStatsDictionary as StatsSectionData;
 
-            requestStats.push(filteredStatsSectionData);
-          }
-        });
+          requestStats.push(filteredStatsSectionData);
+        }
+      },
+    );
 
     if (!requestStats.length) {
+      this.channelLogger?.log(
+        LogLevel.ERRORS,
+        'Media stats channel: no media stats to send',
+      );
       return {code: 400, message: 'No media stats to send', details: []};
     }
 
     if (this.channel.readyState === 'open') {
       const mediaStatsRequest: UploadMediaStatsRequest = {
         requestId: this.requestId,
-        uploadMediaStats: {sections: requestStats}
+        uploadMediaStats: {sections: requestStats},
       };
 
       const request: MediaStatsChannelFromClient = {
         request: mediaStatsRequest,
       };
-      this.channel.send(JSON.stringify(request));
+      this.channelLogger?.log(
+        LogLevel.MESSAGES,
+        'Media stats channel: sending request',
+        mediaStatsRequest,
+      );
+      try {
+        this.channel.send(JSON.stringify(request));
+      } catch (e) {
+        this.channelLogger?.log(
+          LogLevel.ERRORS,
+          'Media stats channel: Failed to send request with error',
+          e as Error,
+        );
+        throw e;
+      }
+
       this.requestId++;
       const requestPromise = new Promise<MediaApiResponseStatus>((resolve) => {
         this.pendingRequestResolveMap.set(mediaStatsRequest.requestId, resolve);
@@ -166,6 +244,10 @@ export class MediaStatsChannelHandler {
     } else {
       clearInterval(this.intervalId);
       this.intervalId = 0;
+      this.channelLogger?.log(
+        LogLevel.ERRORS,
+        'Media stats channel: handler tried to send message when channel was closed',
+      );
       return {code: 400, message: 'Channel is not open', details: []};
     }
   }

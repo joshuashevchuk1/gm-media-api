@@ -18,6 +18,12 @@
  * @fileoverview Meet Media Api types and interfaces.
  */
 
+import {
+  DeletedResource,
+  MediaApiRequest,
+  MediaApiResponse,
+  ResourceSnapshot,
+} from './datachannels';
 import {Subscribable} from './subscribable';
 
 /**
@@ -27,14 +33,14 @@ import {Subscribable} from './subscribable';
  */
 export interface MediaEntry {
   // We expect participant to be set once.
-  readonly participant: Subscribable<Participant|undefined>;
+  readonly participant: Subscribable<Participant | undefined>;
   readonly audioMuted: Subscribable<boolean>;
   readonly videoMuted: Subscribable<boolean>;
   readonly screenShare: Subscribable<boolean>;
   readonly isPresenter: Subscribable<boolean>;
-  readonly mediaLayout: Subscribable<MediaLayout|undefined>;
-  readonly videoMeetStreamTrack: Subscribable<MeetStreamTrack|undefined>;
-  readonly audioMeetStreamTrack: Subscribable<MeetStreamTrack|undefined>;
+  readonly mediaLayout: Subscribable<MediaLayout | undefined>;
+  readonly videoMeetStreamTrack: Subscribable<MeetStreamTrack | undefined>;
+  readonly audioMeetStreamTrack: Subscribable<MeetStreamTrack | undefined>;
 }
 
 /**
@@ -47,7 +53,7 @@ export interface Participant {
   // Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
   readonly name: string;
   /** Additional metadata about the participant. */
-  readonly participantInfo: SignedInUser|AnonymousUser|PhoneUser;
+  readonly participantInfo: SignedInUser | AnonymousUser | PhoneUser;
   /**
    * The media entries associated with this participant. These can be
    * transient. There is one participant to many media entries relationship.
@@ -92,7 +98,7 @@ export interface MeetStreamTrack {
    * The media entry associated with this track. This a one to one
    * relationship.
    */
-  readonly mediaEntry: Subscribable<MediaEntry|undefined>;
+  readonly mediaEntry: Subscribable<MediaEntry | undefined>;
 }
 
 /**
@@ -113,7 +119,7 @@ export interface MediaLayout {
   /** The dimensions of the layout. */
   readonly canvasDimensions: CanvasDimensions;
   /** The media entry associated with this layout. */
-  readonly mediaEntry: Subscribable<MediaEntry|undefined>;
+  readonly mediaEntry: Subscribable<MediaEntry | undefined>;
 }
 
 /**
@@ -121,26 +127,26 @@ export interface MediaLayout {
  * stream. Can be used to request a presenter, direct or relevant media layout.
  */
 export type MediaLayoutRequest =
-    // Used to request or change the presenter stream if it exists.
-    {presenter: true, mediaLayout: MediaLayout, mediaEntry?: never}|
-    // Used to request a direct media layout. This can be any media entry in the
-    // meeting.
-    {mediaEntry: MediaEntry, mediaLayout: MediaLayout, presenter?: never}|
-    // Used to request a relevant media layout. This is a media layout that
-    // the backend determines is relevant to the user. This could be a current
-    // loudest speaker, presenter, etc.
-    {mediaLayout: MediaLayout, mediaEntry?: never, presenter?: never};
+  // Used to request or change the presenter stream if it exists.
+  | {presenter: true; mediaLayout: MediaLayout; mediaEntry?: never}
+  // Used to request a direct media layout. This can be any media entry in the
+  // meeting.
+  | {mediaEntry: MediaEntry; mediaLayout: MediaLayout; presenter?: never}
+  // Used to request a relevant media layout. This is a media layout that
+  // the backend determines is relevant to the user. This could be a current
+  // loudest speaker, presenter, etc.
+  | {mediaLayout: MediaLayout; mediaEntry?: never; presenter?: never};
 
 /**
  * Enum for the status of the Meet session.
  */
 export enum MeetSessionStatus {
-  NEW = 0, /* Default value */
+  NEW = 0 /* Default value */,
   WAITING = 1,
   JOINED = 2,
   DISCONNECTED = 3,
-  KICKED = 4,   /* DISCONNECTED with leave request */
-  REJECTED = 5, /* Error state */
+  KICKED = 4 /* DISCONNECTED with leave request */,
+  REJECTED = 5 /* Error state */,
 }
 
 /**
@@ -154,4 +160,40 @@ export interface MeetMediaClientRequiredConfiguration {
    */
   enableAudioStreams: boolean;
   accessToken: string;
+  logsCallback?: (logEvent: LogEvent) => void;
+}
+
+/**
+ * Log level for each data channel.
+ */
+export enum LogLevel {
+  UNKNOWN = 0,
+  ERRORS = 1,
+  RESOURCES = 2,
+  MESSAGES = 3,
+}
+
+/**
+ * List of log source types
+ */
+export type LogSourceType =
+  | 'session-control'
+  | 'participants'
+  | 'media-entries'
+  | 'video-assignment'
+  | 'media-stats';
+
+/**
+ * Log event that is propagated to the callback.
+ */
+export interface LogEvent {
+  level: LogLevel;
+  logString: string;
+  sourceType: LogSourceType;
+  relevantObject?:
+    | Error
+    | DeletedResource
+    | ResourceSnapshot
+    | MediaApiResponse
+    | MediaApiRequest;
 }

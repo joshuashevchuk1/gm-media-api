@@ -20,6 +20,7 @@ ts_library(
     name = "media_types",
     srcs = ["mediatypes.ts"],
     deps = [
+        ":data_channels",
         ":subcribable",
     ],
 )

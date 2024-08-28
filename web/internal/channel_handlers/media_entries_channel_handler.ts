@@ -18,28 +18,62 @@
  * @fileoverview Handles Media entries
  */
 
-import {DeletedMediaEntry, MediaEntriesChannelToClient, MediaEntry as MediaEntryResource} from '../../types/datachannels';
-import {MediaEntry, MediaLayout, MeetStreamTrack} from '../../types/mediatypes';
-import {InternalMediaEntry, InternalMediaLayout, InternalMeetStreamTrack} from '../internal_types';
+import {
+  DeletedMediaEntry,
+  MediaEntriesChannelToClient,
+  MediaEntry as MediaEntryResource,
+} from '../../types/datachannels';
+import {
+  LogLevel,
+  MediaEntry,
+  MediaLayout,
+  MeetStreamTrack,
+} from '../../types/mediatypes';
+import {
+  InternalMediaEntry,
+  InternalMediaLayout,
+  InternalMeetStreamTrack,
+} from '../internal_types';
 import {SubscribableDelegate} from '../subscribable_impl';
 import {createMediaEntry} from '../utils';
+import {ChannelLogger} from './channel_logger';
 
 /**
  * Helper class to handle the media entries channel.
  */
 export class MediaEntriesChannelHandler {
   constructor(
-      private readonly channel: RTCDataChannel,
-      private readonly mediaEntriesDelegate: SubscribableDelegate<MediaEntry[]>,
-      private readonly idMediaEntryMap: Map<number, MediaEntry>,
-      private readonly internalMediaEntryMap =
-          new Map<MediaEntry, InternalMediaEntry>(),
-      private readonly internalMeetStreamTrackMap =
-          new Map<MeetStreamTrack, InternalMeetStreamTrack>(),
-      private readonly internalMediaLayoutMap =
-          new Map<MediaLayout, InternalMediaLayout>()) {
+    private readonly channel: RTCDataChannel,
+    private readonly mediaEntriesDelegate: SubscribableDelegate<MediaEntry[]>,
+    private readonly idMediaEntryMap: Map<number, MediaEntry>,
+    private readonly internalMediaEntryMap = new Map<
+      MediaEntry,
+      InternalMediaEntry
+    >(),
+    private readonly internalMeetStreamTrackMap = new Map<
+      MeetStreamTrack,
+      InternalMeetStreamTrack
+    >(),
+    private readonly internalMediaLayoutMap = new Map<
+      MediaLayout,
+      InternalMediaLayout
+    >(),
+    private readonly channelLogger?: ChannelLogger,
+  ) {
     this.channel.onmessage = (event) => {
       this.onMediaEntriesMessage(event);
+    };
+    this.channel.onopen = () => {
+      this.channelLogger?.log(
+        LogLevel.MESSAGES,
+        'Media entries channel: opened',
+      );
+    };
+    this.channel.onclose = () => {
+      this.channelLogger?.log(
+        LogLevel.MESSAGES,
+        'Media entries channel: closed',
+      );
     };
   }
 
@@ -49,20 +83,26 @@ export class MediaEntriesChannelHandler {
 
     // Delete media entries.
     data.deletedResources?.forEach((deletedResource: DeletedMediaEntry) => {
+      this.channelLogger?.log(
+        LogLevel.RESOURCES,
+        'Media entries channel: resource deleted',
+        deletedResource,
+      );
       const deletedMediaEntry = this.idMediaEntryMap.get(deletedResource.id);
       if (deletedMediaEntry) {
         mediaEntryArray = mediaEntryArray.filter(
-            mediaEntry => mediaEntry !== deletedMediaEntry);
+          (mediaEntry) => mediaEntry !== deletedMediaEntry,
+        );
         // If we find the media entry in the id map, it should exist in the
         // internal map.
         const internalMediaEntry =
-            this.internalMediaEntryMap.get(deletedMediaEntry);
+          this.internalMediaEntryMap.get(deletedMediaEntry);
         // Remove relationship between media entry and media layout.
-        const mediaLayout: MediaLayout|undefined =
-            internalMediaEntry!.mediaLayout.get();
+        const mediaLayout: MediaLayout | undefined =
+          internalMediaEntry!.mediaLayout.get();
         if (mediaLayout) {
           const internalMediaLayout =
-              this.internalMediaLayoutMap.get(mediaLayout);
+            this.internalMediaLayoutMap.get(mediaLayout);
           if (internalMediaLayout) {
             internalMediaLayout.mediaEntry.set(undefined);
           }
@@ -70,18 +110,18 @@ export class MediaEntriesChannelHandler {
 
         // Remove relationship between media entry and meet stream tracks.
         const videoMeetStreamTrack =
-            internalMediaEntry!.videoMeetStreamTrack.get();
+          internalMediaEntry!.videoMeetStreamTrack.get();
         if (videoMeetStreamTrack) {
           const internalVideoStreamTrack =
-              this.internalMeetStreamTrackMap.get(videoMeetStreamTrack);
+            this.internalMeetStreamTrackMap.get(videoMeetStreamTrack);
           internalVideoStreamTrack!.mediaEntry.set(undefined);
         }
 
         const audioMeetStreamTrack =
-            internalMediaEntry!.audioMeetStreamTrack.get();
+          internalMediaEntry!.audioMeetStreamTrack.get();
         if (audioMeetStreamTrack) {
           const internalAudioStreamTrack =
-              this.internalMeetStreamTrackMap.get(audioMeetStreamTrack);
+            this.internalMeetStreamTrackMap.get(audioMeetStreamTrack);
           internalAudioStreamTrack!.mediaEntry.set(undefined);
         }
 
@@ -94,14 +134,26 @@ export class MediaEntriesChannelHandler {
     // Update or add media entries.
     const addedMediaEntries: MediaEntry[] = [];
     data.resources?.forEach((resource: MediaEntryResource) => {
-      let internalMediaEntry: InternalMediaEntry|undefined;
-      let mediaEntry: MediaEntry|undefined;
+      this.channelLogger?.log(
+        LogLevel.RESOURCES,
+        'Media entries channel: resource added',
+        resource,
+      );
+
+      let internalMediaEntry: InternalMediaEntry | undefined;
+      let mediaEntry: MediaEntry | undefined;
       let videoCsrc = 0;
       if (resource.mediaEntry.videoCsrcs.length > 0) {
         // We expect there to only be one video Csrcs. There is possibility
         // for this to be more than value in WebRTC but unlikely in Meet.
         // TODO : Explore making video csrcs field singluar.
         videoCsrc = resource.mediaEntry.videoCsrcs[0];
+      } else {
+        this.channelLogger?.log(
+          LogLevel.ERRORS,
+          'Media entries channel: more than one video Csrc in media entry',
+          resource,
+        );
       }
 
       if (this.idMediaEntryMap.has(resource.id!)) {
@@ -132,29 +184,41 @@ export class MediaEntriesChannelHandler {
 
       // Assign meet streams to media entry if they are not already assigned
       // correctly.
-      if (!(this.isAudioMeetStreamTrackAssignedToMediaEntry(internalMediaEntry!
-                                                            ) &&
-            this.isVideoMeetStreamTrackAssignedToMediaEntry(internalMediaEntry!
-                                                            ))) {
-        for (const [meetStreamTrack, internalMeetStreamTrack] of this
-                 .internalMeetStreamTrackMap.entries()) {
+      if (
+        !(
+          this.isAudioMeetStreamTrackAssignedToMediaEntry(
+            internalMediaEntry!,
+          ) &&
+          this.isVideoMeetStreamTrackAssignedToMediaEntry(internalMediaEntry!)
+        )
+      ) {
+        for (const [
+          meetStreamTrack,
+          internalMeetStreamTrack,
+        ] of this.internalMeetStreamTrackMap.entries()) {
           const receiver = internalMeetStreamTrack.receiver;
           const contributingSources: RTCRtpContributingSource[] =
-              receiver.getContributingSources();
+            receiver.getContributingSources();
           for (const contributingSource of contributingSources) {
             if (contributingSource.source === internalMediaEntry!.audioCsrc) {
               internalMediaEntry!.audioMeetStreamTrack.set(meetStreamTrack);
               // If Video stream is already assigned correctly, break.
-              if (this.isVideoMeetStreamTrackAssignedToMediaEntry(
-                      internalMediaEntry!)) {
+              if (
+                this.isVideoMeetStreamTrackAssignedToMediaEntry(
+                  internalMediaEntry!,
+                )
+              ) {
                 break;
               }
             }
             if (contributingSource.source === internalMediaEntry!.videoCsrc) {
               internalMediaEntry!.videoMeetStreamTrack.set(meetStreamTrack);
               // If Audio stream is already assigned correctly, break.
-              if (this.isAudioMeetStreamTrackAssignedToMediaEntry(
-                      internalMediaEntry!)) {
+              if (
+                this.isAudioMeetStreamTrackAssignedToMediaEntry(
+                  internalMediaEntry!,
+                )
+              ) {
                 break;
               }
             }
@@ -164,25 +228,28 @@ export class MediaEntriesChannelHandler {
     });
 
     // Update media entry collection.
-    if ((data.resources && data.resources.length > 0) ||
-        (data.deletedResources && data.deletedResources.length > 0)) {
+    if (
+      (data.resources && data.resources.length > 0) ||
+      (data.deletedResources && data.deletedResources.length > 0)
+    ) {
       const newMediaEntryArray = [...mediaEntryArray, ...addedMediaEntries];
       this.mediaEntriesDelegate.set(newMediaEntryArray);
     }
   }
 
   private isAudioMeetStreamTrackAssignedToMediaEntry(
-      internalMediaEntry: InternalMediaEntry): boolean {
+    internalMediaEntry: InternalMediaEntry,
+  ): boolean {
     if (!internalMediaEntry.audioCsrc) return false;
     const audioStreamTrack = internalMediaEntry.audioMeetStreamTrack.get();
     if (!audioStreamTrack) return false;
     const internalAudioMeetStreamTrack =
-        this.internalMeetStreamTrackMap.get(audioStreamTrack);
+      this.internalMeetStreamTrackMap.get(audioStreamTrack);
     // This is not expected. Map should be comprehensive of all meet stream
     // tracks.
     if (!internalAudioMeetStreamTrack) return false;
     const contributingSources: RTCRtpContributingSource[] =
-        internalAudioMeetStreamTrack.receiver.getContributingSources();
+      internalAudioMeetStreamTrack.receiver.getContributingSources();
 
     let audioCsrcFound = false;
     for (const contributingSource of contributingSources) {
@@ -195,17 +262,18 @@ export class MediaEntriesChannelHandler {
   }
 
   private isVideoMeetStreamTrackAssignedToMediaEntry(
-      internalMediaEntry: InternalMediaEntry): boolean {
+    internalMediaEntry: InternalMediaEntry,
+  ): boolean {
     if (!internalMediaEntry.videoSsrc) return false;
     const videoStreamTrack = internalMediaEntry.videoMeetStreamTrack.get();
     if (!videoStreamTrack) return false;
     const internalVideoMeetStreamTrack =
-        this.internalMeetStreamTrackMap.get(videoStreamTrack);
+      this.internalMeetStreamTrackMap.get(videoStreamTrack);
     // This is not expected. Map should be comprehensive of all meet stream
     // tracks.
     if (!internalVideoMeetStreamTrack) return false;
     const contributingSources: RTCRtpContributingSource[] =
-        internalVideoMeetStreamTrack.receiver.getContributingSources();
+      internalVideoMeetStreamTrack.receiver.getContributingSources();
 
     let videoCsrcFound = false;
     for (const contributingSource of contributingSources) {

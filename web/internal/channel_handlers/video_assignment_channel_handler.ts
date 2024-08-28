@@ -18,11 +18,25 @@
  * @fileoverview Video assignment channel handler.
  */
 
-import {MediaApiCanvas, MediaApiResponseStatus, SetVideoAssignmentRequest, SetVideoAssignmentResponse, VideoAssignment, VideoAssignmentChannelFromClient, VideoAssignmentChannelToClient} from '../../types/datachannels';
-import {MediaEntry, MediaLayout, MediaLayoutRequest} from '../../types/mediatypes';
+import {
+  MediaApiCanvas,
+  MediaApiResponseStatus,
+  SetVideoAssignmentRequest,
+  SetVideoAssignmentResponse,
+  VideoAssignment,
+  VideoAssignmentChannelFromClient,
+  VideoAssignmentChannelToClient,
+} from '../../types/datachannels';
+import {
+  LogLevel,
+  MediaEntry,
+  MediaLayout,
+  MediaLayoutRequest,
+} from '../../types/mediatypes';
 import {InternalMediaEntry, InternalMediaLayout} from '../internal_types';
 import {SubscribableDelegate} from '../subscribable_impl';
 import {createMediaEntry} from '../utils';
+import {ChannelLogger} from './channel_logger';
 
 // We request the highest possible resolution by default.
 const MAX_RESOLUTION = {
@@ -37,28 +51,45 @@ const MAX_RESOLUTION = {
 export class VideoAssignmentChannelHandler {
   private requestId = 1;
   private readonly mediaLayoutLabelMap = new Map<MediaLayout, string>();
-  private readonly pendingRequestResolveMap =
-      new Map<number, ((value: MediaApiResponseStatus) => void)>();
+  private readonly pendingRequestResolveMap = new Map<
+    number,
+    (value: MediaApiResponseStatus) => void
+  >();
 
   constructor(
-      private readonly channel: RTCDataChannel,
-      private readonly idMediaEntryMap: Map<number, MediaEntry>,
-      private readonly internalMediaEntryMap =
-          new Map<MediaEntry, InternalMediaEntry>(),
-      private readonly idMediaLayoutMap = new Map<number, MediaLayout>(),
-      private readonly internalMediaLayoutMap =
-          new Map<MediaLayout, InternalMediaLayout>(),
-      private readonly mediaEntriesDelegate: SubscribableDelegate<MediaEntry[]>,
+    private readonly channel: RTCDataChannel,
+    private readonly idMediaEntryMap: Map<number, MediaEntry>,
+    private readonly internalMediaEntryMap = new Map<
+      MediaEntry,
+      InternalMediaEntry
+    >(),
+    private readonly idMediaLayoutMap = new Map<number, MediaLayout>(),
+    private readonly internalMediaLayoutMap = new Map<
+      MediaLayout,
+      InternalMediaLayout
+    >(),
+    private readonly mediaEntriesDelegate: SubscribableDelegate<MediaEntry[]>,
+    private readonly channelLogger?: ChannelLogger,
   ) {
     this.channel.onmessage = (event) => {
       this.onVideoAssignmentMessage(event);
     };
     this.channel.onclose = () => {
       // Resolve all pending requests with an error.
+      this.channelLogger?.log(
+        LogLevel.MESSAGES,
+        'Video assignment channel: closed',
+      );
       for (const [, resolve] of this.pendingRequestResolveMap) {
         resolve({code: 400, message: 'Channel closed', details: []});
       }
       this.pendingRequestResolveMap.clear();
+    };
+    this.channel.onopen = () => {
+      this.channelLogger?.log(
+        LogLevel.MESSAGES,
+        'Video assignment channel: opened',
+      );
     };
   }
 
@@ -75,11 +106,21 @@ export class VideoAssignmentChannelHandler {
   private onVideoAssignmentResponse(response: SetVideoAssignmentResponse) {
     // Users should listen on the video assignment channel for actual video
     // assignments. These responses signify that the request was expected.
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Video assignment channel: recieved response',
+      response,
+    );
     this.pendingRequestResolveMap.get(response.requestId)?.(response.status);
   }
 
   private onVideoAssignmentResources(resources: VideoAssignment[]) {
     resources.forEach((resource) => {
+      this.channelLogger?.log(
+        LogLevel.RESOURCES,
+        'Video assignment channel: resource added',
+        resource,
+      );
       if (resource.videoAssignment.canvases) {
         this.onVideoAssignment(resource);
       }
@@ -88,65 +129,75 @@ export class VideoAssignmentChannelHandler {
 
   private onVideoAssignment(videoAssignment: VideoAssignment) {
     const canvases = videoAssignment.videoAssignment.canvases;
-    canvases.forEach((canvas: {
-                       canvasId: number,
-                       ssrc?: number, mediaEntryId: number,
-                     }) => {
-      const mediaLayout = this.idMediaLayoutMap.get(canvas.canvasId);
-      // We expect that the media layout is already created.
-      if (mediaLayout) {
-        let mediaEntry = mediaLayout.mediaEntry.get();
-        if (mediaEntry &&
+    canvases.forEach(
+      (canvas: {canvasId: number; ssrc?: number; mediaEntryId: number}) => {
+        const mediaLayout = this.idMediaLayoutMap.get(canvas.canvasId);
+        // We expect that the media layout is already created.
+        if (mediaLayout) {
+          let mediaEntry = mediaLayout.mediaEntry.get();
+          if (
+            mediaEntry &&
             this.internalMediaEntryMap.get(mediaEntry)!.id !==
-                canvas.mediaEntryId) {
-          // If the media entry is already associated with a media layout,
-          // we need to remove that association.
-          const internalMediaEntry = this.internalMediaEntryMap.get(mediaEntry);
-          internalMediaEntry!.mediaLayout.set(undefined);
-          mediaEntry = undefined;
-        }
-
-        if (!mediaEntry) {
-          let newMediaEntry;
-          if (this.idMediaEntryMap.has(canvas.mediaEntryId)) {
-            newMediaEntry = this.idMediaEntryMap.get(canvas.mediaEntryId);
-          } else {
-            // We don't expect to hit this expression, but since data channels
-            // don't guarantee order, we do this to be safe.
-            const mediaEntryElement = createMediaEntry({
-              id: canvas.mediaEntryId,
-              audioMuted: false,
-              videoMuted: false,
-              screenShare: false,
-              isPresenter: false,
-              mediaLayout,
-              videoSsrc: canvas.ssrc,
-            });
-            this.internalMediaEntryMap.set(
-                mediaEntryElement.mediaEntry,
-                mediaEntryElement.internalMediaEntry);
-            newMediaEntry = mediaEntryElement.mediaEntry;
-            this.idMediaEntryMap.set(canvas.mediaEntryId, newMediaEntry);
-            const newMediaEntries =
-                [...this.mediaEntriesDelegate.get(), newMediaEntry];
-            this.mediaEntriesDelegate.set(newMediaEntries);
+              canvas.mediaEntryId
+          ) {
+            // If the media entry is already associated with a media layout,
+            // we need to remove that association.
+            const internalMediaEntry =
+              this.internalMediaEntryMap.get(mediaEntry);
+            internalMediaEntry!.mediaLayout.set(undefined);
+            mediaEntry = undefined;
           }
-          this.internalMediaLayoutMap.get(mediaLayout)
+
+          if (!mediaEntry) {
+            let newMediaEntry;
+            if (this.idMediaEntryMap.has(canvas.mediaEntryId)) {
+              newMediaEntry = this.idMediaEntryMap.get(canvas.mediaEntryId);
+            } else {
+              // We don't expect to hit this expression, but since data channels
+              // don't guarantee order, we do this to be safe.
+              const mediaEntryElement = createMediaEntry({
+                id: canvas.mediaEntryId,
+                audioMuted: false,
+                videoMuted: false,
+                screenShare: false,
+                isPresenter: false,
+                mediaLayout,
+                videoSsrc: canvas.ssrc,
+              });
+              this.internalMediaEntryMap.set(
+                mediaEntryElement.mediaEntry,
+                mediaEntryElement.internalMediaEntry,
+              );
+              newMediaEntry = mediaEntryElement.mediaEntry;
+              this.idMediaEntryMap.set(canvas.mediaEntryId, newMediaEntry);
+              const newMediaEntries = [
+                ...this.mediaEntriesDelegate.get(),
+                newMediaEntry,
+              ];
+              this.mediaEntriesDelegate.set(newMediaEntries);
+            }
+            this.internalMediaLayoutMap
+              .get(mediaLayout)
               ?.mediaEntry.set(newMediaEntry);
-          // We expect the media entry to be created, without assertion, TS
-          // complains it can be undefined.
-          // tslint:disable-next-line:no-unnecessary-type-assertion
-          this.internalMediaEntryMap.get(newMediaEntry!)
+            this.internalMediaEntryMap
+              // We expect the media entry to be created, without assertion, TS
+              // complains it can be undefined.
+              // tslint:disable-next-line:no-unnecessary-type-assertion
+              .get(newMediaEntry!)
               ?.mediaLayout.set(mediaLayout);
+          }
         }
-      }
-      // TODO: b/341361368 - Handle the case where the media layout is not
-      // created in the client but the server sends a video assignment for it.
-    });
+        this.channelLogger?.log(
+          LogLevel.ERRORS,
+          'Video assignment channel: server sent a canvas that was not created by the client',
+        );
+      },
+    );
   }
 
-  sendRequests(mediaLayoutRequests: MediaLayoutRequest[]):
-      Promise<MediaApiResponseStatus> {
+  sendRequests(
+    mediaLayoutRequests: MediaLayoutRequest[],
+  ): Promise<MediaApiResponseStatus> {
     const label = Date.now().toString();
     const canvases: MediaApiCanvas[] = [];
     mediaLayoutRequests.forEach((request) => {
@@ -167,9 +218,26 @@ export class VideoAssignmentChannelHandler {
         maxVideoResolution: MAX_RESOLUTION,
       },
     };
-    this.channel.send(JSON.stringify({
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Video Assignment channel: Sending request',
       request,
-    } as VideoAssignmentChannelFromClient));
+    );
+    try {
+      this.channel.send(
+        JSON.stringify({
+          request,
+        } as VideoAssignmentChannelFromClient),
+      );
+    } catch (e) {
+      this.channelLogger?.log(
+        LogLevel.ERRORS,
+        'Video Assignment channel: Failed to send request with error',
+        e as Error,
+      );
+      throw e;
+    }
+
     const requestPromise = new Promise<MediaApiResponseStatus>((resolve) => {
       this.pendingRequestResolveMap.set(request.requestId, resolve);
     });

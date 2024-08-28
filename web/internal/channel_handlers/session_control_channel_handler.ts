@@ -18,21 +18,27 @@
  * @fileoverview Handles the session control channel.
  */
 
-import {LeaveRequest, SessionControlChannelFromClient, SessionControlChannelToClient} from '../../types/datachannels';
-import {MeetSessionStatus} from '../../types/mediatypes';
+import {
+  LeaveRequest,
+  SessionControlChannelFromClient,
+  SessionControlChannelToClient,
+} from '../../types/datachannels';
+import {LogLevel, MeetSessionStatus} from '../../types/mediatypes';
 import {SubscribableDelegate} from '../subscribable_impl';
+import {ChannelLogger} from './channel_logger';
 
 /**
  * Helper class to handles the session control channel.
  */
 export class SessionControlChannelHandler {
   private requestId = 1;
-  private leaveSessionPromise: (() => void)|undefined;
+  private leaveSessionPromise: (() => void) | undefined;
 
   constructor(
-      private readonly channel: RTCDataChannel,
-      private readonly sessionStatusDelegate:
-          SubscribableDelegate<MeetSessionStatus>) {
+    private readonly channel: RTCDataChannel,
+    private readonly sessionStatusDelegate: SubscribableDelegate<MeetSessionStatus>,
+    private readonly channelLogger?: ChannelLogger,
+  ) {
     this.channel.onmessage = (event) => {
       this.onSessionControlMessage(event);
     };
@@ -45,17 +51,31 @@ export class SessionControlChannelHandler {
   }
 
   private onSessionControlOpened() {
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Session control channel: opened',
+    );
     this.sessionStatusDelegate.set(MeetSessionStatus.WAITING);
   }
 
   private onSessionControlMessage(event: MessageEvent) {
     const message = event.data;
     const json = JSON.parse(message) as SessionControlChannelToClient;
-    if (json?.response?.leave && this.leaveSessionPromise) {
-      this.leaveSessionPromise();
+    if (json?.response) {
+      this.channelLogger?.log(
+        LogLevel.MESSAGES,
+        'Session control channel: response recieved',
+        json.response,
+      );
+      this.leaveSessionPromise?.();
     }
     if (json?.resources && json.resources.length > 0) {
       const sessionStatus = json.resources[0].sessionStatus;
+      this.channelLogger?.log(
+        LogLevel.RESOURCES,
+        'Session control channel: resource recieved',
+        json.resources[0],
+      );
       if (sessionStatus.connectionState === 'STATE_WAITING') {
         this.sessionStatusDelegate.set(MeetSessionStatus.WAITING);
       } else if (sessionStatus.connectionState === 'STATE_JOINED') {
@@ -68,17 +88,36 @@ export class SessionControlChannelHandler {
 
   private onSessionControlClosed() {
     // If the channel is closed, we should resolve the leave session promise.
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Session control channel: closed',
+    );
     this.leaveSessionPromise?.();
     this.sessionStatusDelegate.set(MeetSessionStatus.DISCONNECTED);
   }
 
   leaveSession(): Promise<void> {
-    this.channel.send(JSON.stringify({
-      request: {
-        requestId: this.requestId++,
-        leave: {},
-      } as LeaveRequest,
-    } as SessionControlChannelFromClient));
+    this.channelLogger?.log(
+      LogLevel.MESSAGES,
+      'Session control channel: leave session request sent',
+    );
+    try {
+      this.channel.send(
+        JSON.stringify({
+          request: {
+            requestId: this.requestId++,
+            leave: {},
+          } as LeaveRequest,
+        } as SessionControlChannelFromClient),
+      );
+    } catch (e) {
+      this.channelLogger?.log(
+        LogLevel.ERRORS,
+        'Session control channel: Failed to send leave request with error',
+        e as Error,
+      );
+      throw e;
+    }
     return new Promise<void>((resolve) => {
       this.leaveSessionPromise = resolve;
     });

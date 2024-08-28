@@ -21,6 +21,7 @@ package(default_visibility = [
 ts_library(
     name = "channel_handlers",
     srcs = [
+        "channel_logger.ts",
         "media_entries_channel_handler.ts",
         "media_stats_channel_handler.ts",
         "session_control_channel_handler.ts",
