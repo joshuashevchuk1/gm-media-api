@@ -14,18 +14,38 @@
  * limitations under the License.
  */
 
+import {ChannelLogger} from './internal/channel_handlers/channel_logger';
 import {MediaEntriesChannelHandler} from './internal/channel_handlers/media_entries_channel_handler';
 import {MediaStatsChannelHandler} from './internal/channel_handlers/media_stats_channel_handler';
 import {SessionControlChannelHandler} from './internal/channel_handlers/session_control_channel_handler';
 import {VideoAssignmentChannelHandler} from './internal/channel_handlers/video_assignment_channel_handler';
-import {MediaApiCommunicationProtocol, MediaApiCommunicationResponse} from './internal/communication_protocols/communication_protocol';
+import {
+  MediaApiCommunicationProtocol,
+  MediaApiCommunicationResponse,
+} from './internal/communication_protocols/communication_protocol';
 import {DefaultCommunicationProtocolImpl} from './internal/communication_protocols/default_communication_protocol_impl';
-import {InternalMediaEntry, InternalMediaLayout, InternalMeetStreamTrack} from './internal/internal_types';
+import {
+  InternalMediaEntry,
+  InternalMediaLayout,
+  InternalMeetStreamTrack,
+} from './internal/internal_types';
 import {MeetStreamTrackImpl} from './internal/meet_stream_track_impl';
-import {SubscribableDelegate, SubscribableImpl} from './internal/subscribable_impl';
+import {
+  SubscribableDelegate,
+  SubscribableImpl,
+} from './internal/subscribable_impl';
 import {MeetMediaApiClient} from './meetmediaapiclient';
 import {MediaApiResponseStatus} from './types/datachannels';
-import {CanvasDimensions, MediaEntry, MediaLayout, MediaLayoutRequest, MeetMediaClientRequiredConfiguration, MeetSessionStatus, MeetStreamTrack, Participant} from './types/mediatypes';
+import {
+  CanvasDimensions,
+  MediaEntry,
+  MediaLayout,
+  MediaLayoutRequest,
+  MeetMediaClientRequiredConfiguration,
+  MeetSessionStatus,
+  MeetStreamTrack,
+  Participant,
+} from './types/mediatypes';
 import {Subscribable} from './types/subscribable';
 
 // Meet only supports 3 audio virtual ssrcs. If disabled, there will be no
@@ -44,39 +64,44 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   readonly meetStreamTracks: Subscribable<MeetStreamTrack[]>;
   readonly mediaEntries: Subscribable<MediaEntry[]>;
   readonly participants: Subscribable<Participant[]>;
-  readonly presenter: Subscribable<MediaEntry|undefined>;
-  readonly screenshare: Subscribable<MediaEntry[]|undefined>;
+  readonly presenter: Subscribable<MediaEntry | undefined>;
+  readonly screenshare: Subscribable<MediaEntry[] | undefined>;
 
   // Private properties
-  private readonly sessionStatusDelegate:
-      SubscribableDelegate<MeetSessionStatus>;
-  private readonly meetStreamTracksDelegate:
-      SubscribableDelegate<MeetStreamTrack[]>;
+  private readonly sessionStatusDelegate: SubscribableDelegate<MeetSessionStatus>;
+  private readonly meetStreamTracksDelegate: SubscribableDelegate<
+    MeetStreamTrack[]
+  >;
   private readonly mediaEntriesDelegate: SubscribableDelegate<MediaEntry[]>;
   private readonly participantsDelegate: SubscribableDelegate<Participant[]>;
-  private readonly presenterDelegate:
-      SubscribableDelegate<MediaEntry|undefined>;
-  private readonly screenshareDelegate:
-      SubscribableDelegate<MediaEntry[]|undefined>;
+  private readonly presenterDelegate: SubscribableDelegate<
+    MediaEntry | undefined
+  >;
+  private readonly screenshareDelegate: SubscribableDelegate<
+    MediaEntry[] | undefined
+  >;
 
   private readonly peerConnection: RTCPeerConnection;
 
-  private sessionControlChannel: RTCDataChannel|undefined;
-  private sessionControlChannelHandler: SessionControlChannelHandler|undefined;
+  private sessionControlChannel: RTCDataChannel | undefined;
+  private sessionControlChannelHandler:
+    | SessionControlChannelHandler
+    | undefined;
 
-  private videoAssignmentChannel: RTCDataChannel|undefined;
-  private videoAssignmentChannelHandler: VideoAssignmentChannelHandler|
-      undefined;
+  private videoAssignmentChannel: RTCDataChannel | undefined;
+  private videoAssignmentChannelHandler:
+    | VideoAssignmentChannelHandler
+    | undefined;
 
-  private mediaEntriesChannel: RTCDataChannel|undefined;
-  private mediaStatsChannel: RTCDataChannel|undefined;
+  private mediaEntriesChannel: RTCDataChannel | undefined;
+  private mediaStatsChannel: RTCDataChannel | undefined;
   /* tslint:disable:no-unused-variable */
   // This is unused because it is receive only.
   // @ts-ignore
-  private mediaEntriesChannelHandler: MediaEntriesChannelHandler|undefined;
+  private mediaEntriesChannelHandler: MediaEntriesChannelHandler | undefined;
 
   // @ts-ignore
-  private mediaStatsChannelHandler: MediaStatsChannelHandler|undefined;
+  private mediaStatsChannelHandler: MediaStatsChannelHandler | undefined;
   /* tslint:enable:no-unused-variable */
 
   private mediaLayoutId = 1;
@@ -86,50 +111,57 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   private readonly idMediaLayoutMap = new Map<number, MediaLayout>();
 
   // Used to update media layouts.
-  private readonly internalMediaLayoutMap =
-      new Map<MediaLayout, InternalMediaLayout>();
+  private readonly internalMediaLayoutMap = new Map<
+    MediaLayout,
+    InternalMediaLayout
+  >();
 
   // Media entry retrieval by id. Needed by the video assignment channel handler
   // to update the media entry.
   private readonly idMediaEntryMap = new Map<number, MediaEntry>();
 
   // Used to update media entries.
-  private readonly internalMediaEntryMap =
-      new Map<MediaEntry, InternalMediaEntry>();
+  private readonly internalMediaEntryMap = new Map<
+    MediaEntry,
+    InternalMediaEntry
+  >();
 
   // Used to update meet stream tracks.
-  private readonly internalMeetStreamTrackMap =
-      new Map<MeetStreamTrack, InternalMeetStreamTrack>();
+  private readonly internalMeetStreamTrackMap = new Map<
+    MeetStreamTrack,
+    InternalMeetStreamTrack
+  >();
 
   constructor(
-      private readonly requiredConfiguration:
-          MeetMediaClientRequiredConfiguration,
+    private readonly requiredConfiguration: MeetMediaClientRequiredConfiguration,
   ) {
     this.validateConfiguration();
 
-    this.sessionStatusDelegate =
-        new SubscribableDelegate<MeetSessionStatus>(MeetSessionStatus.NEW);
+    this.sessionStatusDelegate = new SubscribableDelegate<MeetSessionStatus>(
+      MeetSessionStatus.NEW,
+    );
     this.sessionStatus = this.sessionStatusDelegate.getSubscribable();
-    this.meetStreamTracksDelegate =
-        new SubscribableDelegate<MeetStreamTrack[]>([]);
+    this.meetStreamTracksDelegate = new SubscribableDelegate<MeetStreamTrack[]>(
+      [],
+    );
     this.meetStreamTracks = this.meetStreamTracksDelegate.getSubscribable();
     this.mediaEntriesDelegate = new SubscribableDelegate<MediaEntry[]>([]);
     this.mediaEntries = this.mediaEntriesDelegate.getSubscribable();
     this.participantsDelegate = new SubscribableDelegate<Participant[]>([]);
     this.participants = this.participantsDelegate.getSubscribable();
-    this.presenterDelegate =
-        new SubscribableDelegate<MediaEntry|undefined>(undefined);
+    this.presenterDelegate = new SubscribableDelegate<MediaEntry | undefined>(
+      undefined,
+    );
     this.presenter = this.presenterDelegate.getSubscribable();
-    this.screenshareDelegate =
-        new SubscribableDelegate<MediaEntry[]|undefined>(undefined);
+    this.screenshareDelegate = new SubscribableDelegate<
+      MediaEntry[] | undefined
+    >(undefined);
     this.screenshare = this.screenshareDelegate.getSubscribable();
 
     const configuration = {
       sdpSemantics: 'unified-plan',
       bundlePolicy: 'max-bundle' as RTCBundlePolicy,
-      iceServers: [
-        {urls: 'stun:stun.l.google.com:19302'},
-      ],
+      iceServers: [{urls: 'stun:stun.l.google.com:19302'}],
     };
 
     // Create peer connection
@@ -142,35 +174,39 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   }
 
   private validateConfiguration(): void {
-    if (this.requiredConfiguration.numberOfVideoStreams <
-            MINIMUM_VIDEO_STREAMS ||
-        this.requiredConfiguration.numberOfVideoStreams >
-            MAXIMUM_VIDEO_STREAMS) {
-      throw new Error(`Unsupported number of video streams, must be between ${
-          MINIMUM_VIDEO_STREAMS} and ${MAXIMUM_VIDEO_STREAMS}`);
+    if (
+      this.requiredConfiguration.numberOfVideoStreams < MINIMUM_VIDEO_STREAMS ||
+      this.requiredConfiguration.numberOfVideoStreams > MAXIMUM_VIDEO_STREAMS
+    ) {
+      throw new Error(
+        `Unsupported number of video streams, must be between ${MINIMUM_VIDEO_STREAMS} and ${MAXIMUM_VIDEO_STREAMS}`,
+      );
     }
   }
 
   private createMeetStreamTrack(
-      mediaStreamTrack: MediaStreamTrack, receiver: RTCRtpReceiver): void {
+    mediaStreamTrack: MediaStreamTrack,
+    receiver: RTCRtpReceiver,
+  ): void {
     const meetStreamTracks = this.meetStreamTracks.get();
-    const mediaEntryDelegate =
-        new SubscribableDelegate<MediaEntry|undefined>(undefined);
-    const meetStreamTrack =
-        new MeetStreamTrackImpl(mediaStreamTrack, mediaEntryDelegate);
-    const newStreamTrackArray = [...meetStreamTracks, meetStreamTrack];
-    this.internalMeetStreamTrackMap.set(
-        meetStreamTrack,
-        {
-          mediaEntry: mediaEntryDelegate,
-          receiver,
-        },
+    const mediaEntryDelegate = new SubscribableDelegate<MediaEntry | undefined>(
+      undefined,
     );
+    const meetStreamTrack = new MeetStreamTrackImpl(
+      mediaStreamTrack,
+      mediaEntryDelegate,
+    );
+    const newStreamTrackArray = [...meetStreamTracks, meetStreamTrack];
+    this.internalMeetStreamTrackMap.set(meetStreamTrack, {
+      mediaEntry: mediaEntryDelegate,
+      receiver,
+    });
     this.meetStreamTracksDelegate.set(newStreamTrackArray);
   }
 
-  async joinMeeting(communicationProtocol?: MediaApiCommunicationProtocol):
-      Promise<void> {
+  async joinMeeting(
+    communicationProtocol?: MediaApiCommunicationProtocol,
+  ): Promise<void> {
     // The offer must be in the order of audio, datachannels, video.
 
     // Create audio transceivers based on initial config.
@@ -184,35 +220,81 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
 
     // Always create the session and media stats control channel.
     this.sessionControlChannel =
-        this.peerConnection.createDataChannel('session-control');
+      this.peerConnection.createDataChannel('session-control');
+    let sessionControlchannelLogger;
+    if (this.requiredConfiguration?.logsCallback) {
+      sessionControlchannelLogger = new ChannelLogger(
+        'session-control',
+        this.requiredConfiguration?.logsCallback,
+      );
+    }
     this.sessionControlChannelHandler = new SessionControlChannelHandler(
-        this.sessionControlChannel, this.sessionStatusDelegate);
+      this.sessionControlChannel,
+      this.sessionStatusDelegate,
+      sessionControlchannelLogger,
+    );
 
     this.mediaStatsChannel =
-        this.peerConnection.createDataChannel('media-stats');
+      this.peerConnection.createDataChannel('media-stats');
+    let mediaStatsChannelLogger;
+    if (this.requiredConfiguration?.logsCallback) {
+      mediaStatsChannelLogger = new ChannelLogger(
+        'media-stats',
+        this.requiredConfiguration?.logsCallback,
+      );
+    }
     this.mediaStatsChannelHandler = new MediaStatsChannelHandler(
-        this.mediaStatsChannel, this.peerConnection);
+      this.mediaStatsChannel,
+      this.peerConnection,
+      mediaStatsChannelLogger,
+    );
 
     // ---- CONDITIONAL DATA CHANNELS -----
 
     // We only need the video assignment channel if we are requesting video.
     if (this.requiredConfiguration.numberOfVideoStreams > 0) {
       this.videoAssignmentChannel =
-          this.peerConnection.createDataChannel('video-assignment');
+        this.peerConnection.createDataChannel('video-assignment');
+      let videoAssignmentChannelLogger;
+      if (this.requiredConfiguration?.logsCallback) {
+        videoAssignmentChannelLogger = new ChannelLogger(
+          'video-assignment',
+          this.requiredConfiguration?.logsCallback,
+        );
+      }
       this.videoAssignmentChannelHandler = new VideoAssignmentChannelHandler(
-          this.videoAssignmentChannel, this.idMediaEntryMap,
-          this.internalMediaEntryMap, this.idMediaLayoutMap,
-          this.internalMediaLayoutMap, this.mediaEntriesDelegate);
+        this.videoAssignmentChannel,
+        this.idMediaEntryMap,
+        this.internalMediaEntryMap,
+        this.idMediaLayoutMap,
+        this.internalMediaLayoutMap,
+        this.mediaEntriesDelegate,
+        videoAssignmentChannelLogger,
+      );
     }
 
-    if (this.requiredConfiguration.numberOfVideoStreams > 0 ||
-        this.requiredConfiguration.enableAudioStreams) {
+    if (
+      this.requiredConfiguration.numberOfVideoStreams > 0 ||
+      this.requiredConfiguration.enableAudioStreams
+    ) {
       this.mediaEntriesChannel =
-          this.peerConnection.createDataChannel('media-entries');
+        this.peerConnection.createDataChannel('media-entries');
+      let mediaEntriesChannelLogger;
+      if (this.requiredConfiguration?.logsCallback) {
+        mediaEntriesChannelLogger = new ChannelLogger(
+          'media-entries',
+          this.requiredConfiguration?.logsCallback,
+        );
+      }
       this.mediaEntriesChannelHandler = new MediaEntriesChannelHandler(
-          this.mediaEntriesChannel, this.mediaEntriesDelegate,
-          this.idMediaEntryMap, this.internalMediaEntryMap,
-          this.internalMeetStreamTrackMap, this.internalMediaLayoutMap);
+        this.mediaEntriesChannel,
+        this.mediaEntriesDelegate,
+        this.idMediaEntryMap,
+        this.internalMediaEntryMap,
+        this.internalMeetStreamTrackMap,
+        this.internalMediaLayoutMap,
+        mediaEntriesChannelLogger,
+      );
     }
 
     this.sessionStatusDelegate.subscribe((status) => {
@@ -236,8 +318,9 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     await this.peerConnection.setLocalDescription(pcOffer);
     let response: MediaApiCommunicationResponse;
     try {
-      const protocol: MediaApiCommunicationProtocol = communicationProtocol ??
-          new DefaultCommunicationProtocolImpl(this.requiredConfiguration);
+      const protocol: MediaApiCommunicationProtocol =
+        communicationProtocol ??
+        new DefaultCommunicationProtocolImpl(this.requiredConfiguration);
       response = await protocol.connectActiveConference(pcOffer.sdp ?? '');
     } catch (e) {
       // TODO: b/341361368 - Handle specific errors such as 403 not found,
@@ -245,8 +328,10 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       throw e;
     }
     if (response?.answer) {
-      await this.peerConnection.setRemoteDescription(
-          {type: 'answer', sdp: response?.answer});
+      await this.peerConnection.setRemoteDescription({
+        type: 'answer',
+        sdp: response?.answer,
+      });
     } else {
       // We do not expect this to happen and therefore it is an internal
       // error.
@@ -269,7 +354,8 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   applyLayout(requests: MediaLayoutRequest[]): Promise<MediaApiResponseStatus> {
     if (!this.videoAssignmentChannelHandler) {
       throw new Error(
-          'You must connect to a meeting with video before applying a layout');
+        'You must connect to a meeting with video before applying a layout',
+      );
     }
     requests.forEach((request) => {
       if (!request.mediaLayout) {
@@ -277,17 +363,20 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       }
       if (!this.internalMediaLayoutMap.has(request.mediaLayout)) {
         throw new Error(
-            'The media layout must be created using the client before it can be applied');
+          'The media layout must be created using the client before it can be applied',
+        );
       }
     });
     return this.videoAssignmentChannelHandler.sendRequests(requests);
   }
 
   createMediaLayout(canvasDimensions: CanvasDimensions): MediaLayout {
-    const mediaEntryDelegate =
-        new SubscribableDelegate<MediaEntry|undefined>(undefined);
-    const mediaEntry =
-        new SubscribableImpl<MediaEntry|undefined>(mediaEntryDelegate);
+    const mediaEntryDelegate = new SubscribableDelegate<MediaEntry | undefined>(
+      undefined,
+    );
+    const mediaEntry = new SubscribableImpl<MediaEntry | undefined>(
+      mediaEntryDelegate,
+    );
     const mediaLayout: MediaLayout = {canvasDimensions, mediaEntry};
     this.internalMediaLayoutMap.set(mediaLayout, {
       id: this.mediaLayoutId,
