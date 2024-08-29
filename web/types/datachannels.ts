@@ -117,7 +117,7 @@ export declare interface SessionStatus extends ResourceSnapshot {
      * - `STATE_JOINED`: Session has fully joined the meeting.
      * - `STATE_DISCONNECTED`: Session is not connected to the meeting.
      */
-    connectionState: 'STATE_WAITING'|'STATE_JOINED'|'STATE_DISCONNECTED';
+    connectionState: 'STATE_WAITING' | 'STATE_JOINED' | 'STATE_DISCONNECTED';
   };
 }
 
@@ -130,7 +130,7 @@ export declare interface ParticipantsChannelToClient {
   /**
    * List of resource snapshots managed by the server, with no implied order.
    */
-  resources?: LegacyParticipant|Participant[];
+  resources?: LegacyParticipant | Participant[];
   /** List of deleted resources with no implied order. */
   deletedResources?: DeletedParticipant[];
 }
@@ -142,7 +142,8 @@ export declare interface LegacyParticipant extends ResourceSnapshot {
   participantId: number;
   participantInfo: {
     /** Human readable name of a participant in the meeting */
-    displayName: string; avatarUrl: string;
+    displayName: string;
+    avatarUrl: string;
   };
   /**
    * - `PERSON`: The participant is a single person using the Meet
@@ -152,7 +153,7 @@ export declare interface LegacyParticipant extends ResourceSnapshot {
    * - `DIAL_IN`: The participant is a telephony client that has dialed
    *   in.
    */
-  identityType: 'PERSON'|'ROOM_DEVICE'|'DIAL_IN';
+  identityType: 'PERSON' | 'ROOM_DEVICE' | 'DIAL_IN';
 }
 
 /**
@@ -162,7 +163,8 @@ export declare interface Participant extends ResourceSnapshot {
   participantId: number;
   participantInfo: {
     /** Human readable name of a participant in the meeting */
-    displayName: string; avatarUrl: string;
+    displayName: string;
+    avatarUrl: string;
   };
   /**
    * - `PERSON`: The participant is a single person using the Meet
@@ -172,7 +174,7 @@ export declare interface Participant extends ResourceSnapshot {
    * - `DIAL_IN`: The participant is a telephony client that has dialed
    *   in
    */
-  identityType: 'PERSON'|'ROOM_DEVICE'|'DIAL_IN';
+  identityType: 'PERSON' | 'ROOM_DEVICE' | 'DIAL_IN';
 }
 
 /**
@@ -445,40 +447,69 @@ type CodecSectionNumberFields = 'payload_type';
  * Codec fields.
  */
 export declare type CodecSectionFields =
-    CodeSectionStringFields | CodecSectionNumberFields;
+  | CodeSectionStringFields
+  | CodecSectionNumberFields;
 
 /** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-codec */
 export declare type CodecSection = {
-  [key in CodecSectionFields]?: key extends CodeSectionStringFields ? string :
-                                                                      number;
+  [key in CodecSectionFields]?: key extends CodeSectionStringFields
+    ? string
+    : number;
 };
 
-type InboundRtpSectionStringFields = 'codec_id'|'kind';
+type InboundRtpSectionStringFields = 'codec_id' | 'kind';
 
-type InboundRtpSectionNumberFields = 'ssrc'|'jitter'|'packets_lost'|
-    'packets_received'|'bytes_received'|'jitter_buffer_delay'|
-    'jitter_buffer_emitted_count'|'jitter_buffer_minimum_delay'|
-    'jitter_buffer_target_delay'|'total_audio_energy'|'fir_count'|
-    'frame_height'|'frame_width'|'frames_decoded'|'frames_dropped'|
-    'frames_per_second'|'frames_received'|'freeze_count'|'key_frames_decoded'|
-    'nack_count'|'pli_count'|'retransmitted_packets_received'|
-    'total_freezes_duration'|'total_pauses_duration'|'audio_level'|
-    'concealed_samples'|'total_samples_received'|'total_samples_duration';
+type InboundRtpSectionNumberFields =
+  | 'ssrc'
+  | 'jitter'
+  | 'packets_lost'
+  | 'packets_received'
+  | 'bytes_received'
+  | 'jitter_buffer_delay'
+  | 'jitter_buffer_emitted_count'
+  | 'jitter_buffer_minimum_delay'
+  | 'jitter_buffer_target_delay'
+  | 'total_audio_energy'
+  | 'fir_count'
+  | 'frame_height'
+  | 'frame_width'
+  | 'frames_decoded'
+  | 'frames_dropped'
+  | 'frames_per_second'
+  | 'frames_received'
+  | 'freeze_count'
+  | 'key_frames_decoded'
+  | 'nack_count'
+  | 'pli_count'
+  | 'retransmitted_packets_received'
+  | 'total_freezes_duration'
+  | 'total_pauses_duration'
+  | 'audio_level'
+  | 'concealed_samples'
+  | 'total_samples_received'
+  | 'total_samples_duration';
 
 /** Inbound Rtp fields. */
 export type InboundRtpSectionFields =
-    InboundRtpSectionStringFields|InboundRtpSectionNumberFields;
+  | InboundRtpSectionStringFields
+  | InboundRtpSectionNumberFields;
 
 /** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-inbound-rtp */
 export declare type InboundRtpSection = {
-  [key in InboundRtpSectionFields]?:
-      key extends InboundRtpSectionStringFields ? string : number;
+  [key in InboundRtpSectionFields]?: key extends InboundRtpSectionStringFields
+    ? string
+    : number;
 };
 
 /** Candidate pair fields. */
-export type CandidatePairSectionFields = 'available_outgoing_bitrate'|
-    'bytes_received'|'bytes_sent'|'current_round_trip_time'|'packets_received'|
-    'packets_sent'|'total_round_trip_time';
+export type CandidatePairSectionFields =
+  | 'available_outgoing_bitrate'
+  | 'bytes_received'
+  | 'bytes_sent'
+  | 'current_round_trip_time'
+  | 'packets_received'
+  | 'packets_sent'
+  | 'total_round_trip_time';
 
 /** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-candidate-pair */
 export declare type CandidatePairSection = {
@@ -490,8 +521,11 @@ export declare type CandidatePairSection = {
  * https://www.w3.org/TR/webrtc-stats/#dom-rtcaudioplayoutstats
  */
 export type MediaPlayoutSectionFields =
-    'synthesized_samples_duration'|'synthesized_samples_events'|
-    'total_samples_duration'|'total_playout_delay'|'total_samples_count';
+  | 'synthesized_samples_duration'
+  | 'synthesized_samples_events'
+  | 'total_samples_duration'
+  | 'total_playout_delay'
+  | 'total_samples_count';
 
 /**
  * https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-media-playout
@@ -511,9 +545,11 @@ export declare type TransportSection = {
   [key in TransportSectionFields]?: string;
 };
 
-
 type IceCandidateSectionStringFields =
-    'address'|'candidate_type'|'protocol'|'network_type';
+  | 'address'
+  | 'candidate_type'
+  | 'protocol'
+  | 'network_type';
 type IceCandidateSectionNumberFields = 'port';
 
 /**
@@ -521,15 +557,17 @@ type IceCandidateSectionNumberFields = 'port';
  *  https://www.w3.org/TR/webrtc-stats/#dom-rtcicecandidatestats
  */
 export declare type IceCandidateSectionFields =
-    IceCandidateSectionStringFields | IceCandidateSectionNumberFields;
+  | IceCandidateSectionStringFields
+  | IceCandidateSectionNumberFields;
 
 /**
  * https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-local-candidate or
  * https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-remote-candidate.
  */
 export declare type IceCandidateSection = {
-  [key in IceCandidateSectionFields]?:
-      key extends IceCandidateSectionStringFields ? string : number;
+  [key in IceCandidateSectionFields]?: key extends IceCandidateSectionStringFields
+    ? string
+    : number;
 };
 
 /**

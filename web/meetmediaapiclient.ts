@@ -20,7 +20,15 @@
 
 import {MediaApiCommunicationProtocol} from './internal/communication_protocols/communication_protocol';
 import {MediaApiResponseStatus} from './types/datachannels';
-import {CanvasDimensions, MediaEntry, MediaLayout, MediaLayoutRequest, MeetSessionStatus, MeetStreamTrack, Participant} from './types/mediatypes';
+import {
+  CanvasDimensions,
+  MediaEntry,
+  MediaLayout,
+  MediaLayoutRequest,
+  MeetSessionStatus,
+  MeetStreamTrack,
+  Participant,
+} from './types/mediatypes';
 import {Subscribable} from './types/subscribable';
 
 /**
@@ -31,11 +39,12 @@ export interface MeetMediaApiClient {
   readonly meetStreamTracks: Subscribable<MeetStreamTrack[]>;
   readonly mediaEntries: Subscribable<MediaEntry[]>;
   readonly participants: Subscribable<Participant[]>;
-  readonly presenter: Subscribable<MediaEntry|undefined>;
-  readonly screenshare: Subscribable<MediaEntry[]|undefined>;
+  readonly presenter: Subscribable<MediaEntry | undefined>;
+  readonly screenshare: Subscribable<MediaEntry[] | undefined>;
 
-  joinMeeting(communicationProtocol?: MediaApiCommunicationProtocol):
-      Promise<void>;
+  joinMeeting(
+    communicationProtocol?: MediaApiCommunicationProtocol,
+  ): Promise<void>;
   leaveMeeting(): Promise<void>;
 
   /**

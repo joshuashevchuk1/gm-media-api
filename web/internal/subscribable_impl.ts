@@ -47,8 +47,9 @@ export class SubscribableImpl<T> implements Subscribable<T> {
  */
 export class SubscribableDelegate<T> {
   private readonly subscribers = new Set<(value: T) => void>();
-  private readonly subscribable: Subscribable<T> =
-      new SubscribableImpl<T>(this);
+  private readonly subscribable: Subscribable<T> = new SubscribableImpl<T>(
+    this,
+  );
 
   constructor(private value: T) {}
 

@@ -20,38 +20,44 @@
  */
 
 import ConnectActiveConferenceRpcId from 'goog:proto.google.apps.meet.v2main.spacesService.ConnectActiveConferenceRpcId';
-import {ConnectActiveConferenceRequest, ImmutableConnectActiveConferenceResponse,} from 'google3/google/apps/meet/v2main/service.proto';
+import {
+  ConnectActiveConferenceRequest,
+  ImmutableConnectActiveConferenceResponse,
+} from 'google3/google/apps/meet/v2main/service.proto';
 import {ImmutableGenericDataInterface} from 'google3/javascript/frameworks/client/data/immutablegenericdatainterface';
 
 import {MeetMediaClientRequiredConfiguration} from '../../types/mediatypes';
 
-import {MediaApiCommunicationProtocol, MediaApiCommunicationResponse} from './communication_protocol';
+import {
+  MediaApiCommunicationProtocol,
+  MediaApiCommunicationResponse,
+} from './communication_protocol';
 
 /**
  * The RPC communication protocol for communication with Meet API. Used for
  * testing.
  */
-export class RpcCommunicationProtocolImpl implements
-    MediaApiCommunicationProtocol {
+export class RpcCommunicationProtocolImpl
+  implements MediaApiCommunicationProtocol
+{
   constructor(
-      private readonly requiredConfiguration:
-          MeetMediaClientRequiredConfiguration,
-      private readonly immutableGenericDataService:
-          ImmutableGenericDataInterface,
+    private readonly requiredConfiguration: MeetMediaClientRequiredConfiguration,
+    private readonly immutableGenericDataService: ImmutableGenericDataInterface,
   ) {}
 
-  async connectActiveConference(sdpOffer: string):
-      Promise<MediaApiCommunicationResponse> {
+  async connectActiveConference(
+    sdpOffer: string,
+  ): Promise<MediaApiCommunicationResponse> {
     const response: ImmutableConnectActiveConferenceResponse =
-        await this.immutableGenericDataService.mutate(
-            ConnectActiveConferenceRpcId.getInstance(
-                new ConnectActiveConferenceRequest()
-                    .setName(
-                        'spaces/' + this.requiredConfiguration.meetingSpaceId)
-                    .setOffer(sdpOffer),
-                ),
-        );
-    return Promise.resolve(
-        {answer: response.getAnswer()} as MediaApiCommunicationResponse);
+      await this.immutableGenericDataService.mutate(
+        ConnectActiveConferenceRpcId.getInstance(
+          new ConnectActiveConferenceRequest()
+            .setName('spaces/' + this.requiredConfiguration.meetingSpaceId)
+            .setOffer(sdpOffer),
+        ),
+      );
+    return Promise.resolve({
+      answer: response.getAnswer(),
+    } as MediaApiCommunicationResponse);
   }
 }

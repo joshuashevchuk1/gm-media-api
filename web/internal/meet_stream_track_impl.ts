@@ -27,12 +27,13 @@ import {SubscribableDelegate} from './subscribable_impl';
  * The implementation of MeetStreamTrack.
  */
 export class MeetStreamTrackImpl implements MeetStreamTrack {
-  readonly mediaEntry: Subscribable<MediaEntry|undefined>;
+  readonly mediaEntry: Subscribable<MediaEntry | undefined>;
 
   constructor(
-      readonly mediaStreamTrack: MediaStreamTrack,
-      private readonly mediaEntryDelegate:
-          SubscribableDelegate<MediaEntry|undefined>,
+    readonly mediaStreamTrack: MediaStreamTrack,
+    private readonly mediaEntryDelegate: SubscribableDelegate<
+      MediaEntry | undefined
+    >,
   ) {
     this.mediaEntry = this.mediaEntryDelegate.getSubscribable();
   }

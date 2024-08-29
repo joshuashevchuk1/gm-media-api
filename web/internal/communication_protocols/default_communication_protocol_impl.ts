@@ -21,25 +21,29 @@
 
 import {MeetMediaClientRequiredConfiguration} from '../../types/mediatypes';
 
-import {MediaApiCommunicationProtocol, MediaApiCommunicationResponse} from './communication_protocol';
+import {
+  MediaApiCommunicationProtocol,
+  MediaApiCommunicationResponse,
+} from './communication_protocol';
 
 const MEET_API_URL = 'https://meet.googleapis.com/v2beta/';
 
 /**
  * The HTTP communication protocol for communication with Meet API.
  */
-export class DefaultCommunicationProtocolImpl implements
-    MediaApiCommunicationProtocol {
+export class DefaultCommunicationProtocolImpl
+  implements MediaApiCommunicationProtocol
+{
   constructor(
-      private readonly requiredConfiguration:
-          MeetMediaClientRequiredConfiguration,
-      private readonly meetApiUrl: string = MEET_API_URL) {}
+    private readonly requiredConfiguration: MeetMediaClientRequiredConfiguration,
+    private readonly meetApiUrl: string = MEET_API_URL,
+  ) {}
 
-  async connectActiveConference(sdpOffer: string):
-      Promise<MediaApiCommunicationResponse> {
+  async connectActiveConference(
+    sdpOffer: string,
+  ): Promise<MediaApiCommunicationResponse> {
     // Call to Meet API
-    const connectUrl = `${this.meetApiUrl}${
-        this.requiredConfiguration.meetingSpaceId}:connectActiveConference`;
+    const connectUrl = `${this.meetApiUrl}${this.requiredConfiguration.meetingSpaceId}:connectActiveConference`;
     const response = await fetch(connectUrl, {
       method: 'POST',
       headers: {
@@ -50,8 +54,9 @@ export class DefaultCommunicationProtocolImpl implements
       }),
     });
     if (!response.ok) {
-      throw new Error(`Failed to join meeting, status: ${
-          response.status}, message: ${response.statusText}`);
+      throw new Error(
+        `Failed to join meeting, status: ${response.status}, message: ${response.statusText}`,
+      );
     }
     const body = await response.json();
     return {answer: body['answer']} as MediaApiCommunicationResponse;

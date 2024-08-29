@@ -36,11 +36,13 @@ export interface InternalMediaEntry {
   readonly videoMuted: SubscribableDelegate<boolean>;
   readonly screenShare: SubscribableDelegate<boolean>;
   readonly isPresenter: SubscribableDelegate<boolean>;
-  readonly mediaLayout: SubscribableDelegate<MediaLayout|undefined>;
-  readonly videoMeetStreamTrack:
-      SubscribableDelegate<MeetStreamTrack|undefined>;
-  readonly audioMeetStreamTrack:
-      SubscribableDelegate<MeetStreamTrack|undefined>;
+  readonly mediaLayout: SubscribableDelegate<MediaLayout | undefined>;
+  readonly videoMeetStreamTrack: SubscribableDelegate<
+    MeetStreamTrack | undefined
+  >;
+  readonly audioMeetStreamTrack: SubscribableDelegate<
+    MeetStreamTrack | undefined
+  >;
 }
 
 /**
@@ -50,7 +52,7 @@ export interface InternalMediaEntry {
 export interface InternalMediaLayout {
   videoSsrc?: number;
   readonly id: number;
-  readonly mediaEntry: SubscribableDelegate<MediaEntry|undefined>;
+  readonly mediaEntry: SubscribableDelegate<MediaEntry | undefined>;
 }
 
 /**
@@ -58,6 +60,6 @@ export interface InternalMediaLayout {
  * subscribable delegates.
  */
 export interface InternalMeetStreamTrack {
-  readonly mediaEntry: SubscribableDelegate<MediaEntry|undefined>;
+  readonly mediaEntry: SubscribableDelegate<MediaEntry | undefined>;
   readonly receiver: RTCRtpReceiver;
 }

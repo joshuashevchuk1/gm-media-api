@@ -18,7 +18,12 @@
  * @fileoverview Utility functions for the MeetMediaApiClient.
  */
 
-import {MediaEntry, MediaLayout, MeetStreamTrack, Participant} from '../types/mediatypes';
+import {
+  MediaEntry,
+  MediaLayout,
+  MeetStreamTrack,
+  Participant,
+} from '../types/mediatypes';
 
 import {InternalMediaEntry} from './internal_types';
 import {SubscribableDelegate} from './subscribable_impl';
@@ -46,31 +51,35 @@ export function createMediaEntry({
   videoSsrc,
   id,
 }: {
-  id: number,
-  audioMuted?: boolean,
-  videoMuted?: boolean,
-  screenShare?: boolean,
-  isPresenter?: boolean,
-  participant?: Participant,
-  mediaLayout?: MediaLayout,
-  audioMeetStreamTrack?: MeetStreamTrack,
-  videoMeetStreamTrack?: MeetStreamTrack,
-  videoCsrc?: number,
-  audioCsrc?: number,
-  videoSsrc?: number,
+  id: number;
+  audioMuted?: boolean;
+  videoMuted?: boolean;
+  screenShare?: boolean;
+  isPresenter?: boolean;
+  participant?: Participant;
+  mediaLayout?: MediaLayout;
+  audioMeetStreamTrack?: MeetStreamTrack;
+  videoMeetStreamTrack?: MeetStreamTrack;
+  videoCsrc?: number;
+  audioCsrc?: number;
+  videoSsrc?: number;
 }): InternalMediaEntryElement {
-  const participantDelegate =
-      new SubscribableDelegate<Participant|undefined>(participant);
+  const participantDelegate = new SubscribableDelegate<Participant | undefined>(
+    participant,
+  );
   const audioMutedDelegate = new SubscribableDelegate<boolean>(audioMuted);
   const videoMutedDelegate = new SubscribableDelegate<boolean>(videoMuted);
   const screenShareDelegate = new SubscribableDelegate<boolean>(screenShare);
   const isPresenterDelegate = new SubscribableDelegate<boolean>(isPresenter);
-  const mediaLayoutDelegate =
-      new SubscribableDelegate<MediaLayout|undefined>(mediaLayout);
-  const audioMeetStreamTrackDelegate =
-      new SubscribableDelegate<MeetStreamTrack|undefined>(audioMeetStreamTrack);
-  const videoMeetStreamTrackDelegate =
-      new SubscribableDelegate<MeetStreamTrack|undefined>(videoMeetStreamTrack);
+  const mediaLayoutDelegate = new SubscribableDelegate<MediaLayout | undefined>(
+    mediaLayout,
+  );
+  const audioMeetStreamTrackDelegate = new SubscribableDelegate<
+    MeetStreamTrack | undefined
+  >(audioMeetStreamTrack);
+  const videoMeetStreamTrackDelegate = new SubscribableDelegate<
+    MeetStreamTrack | undefined
+  >(videoMeetStreamTrack);
 
   const mediaEntry: MediaEntry = {
     participant: participantDelegate.getSubscribable(),

@@ -48,7 +48,7 @@ async function handleSessionChange(status: MeetSessionStatus) {
   }
   // Update page with session status.
   document.getElementById('session-status')!.textContent =
-      `Session Status: ${statusString}`;
+    `Session Status: ${statusString}`;
 }
 
 const VIDEO_IDS = [1, 2, 3, 4, 5, 6];
@@ -67,8 +67,9 @@ function handleStreamChange(meetStreamTracks: MeetStreamTrack[]) {
   const localAvailableAudioIds = new Set(AUDIO_IDS);
   meetStreamTracks.forEach((meetStreamTrack: MeetStreamTrack) => {
     if (meetStreamTrack.mediaStreamTrack.kind === 'video') {
-      const elementId =
-          trackIdToElementId.get(meetStreamTrack.mediaStreamTrack.id);
+      const elementId = trackIdToElementId.get(
+        meetStreamTrack.mediaStreamTrack.id,
+      );
       if (elementId) {
         // If a track is already in the element then we remove it from the local
         // ids and continue.
@@ -91,8 +92,9 @@ function handleStreamChange(meetStreamTracks: MeetStreamTrack[]) {
       (videoElement! as HTMLVideoElement).srcObject = mediaStream;
       trackIdToElementId.set(meetStreamTrack.mediaStreamTrack.id, videoId);
     } else if (meetStreamTrack.mediaStreamTrack.kind === 'audio') {
-      const elementId =
-          trackIdToElementId.get(meetStreamTrack.mediaStreamTrack.id);
+      const elementId = trackIdToElementId.get(
+        meetStreamTrack.mediaStreamTrack.id,
+      );
       if (elementId) {
         // If a track is already in the element then we remove it from the local
         // ids and continue.
@@ -128,10 +130,17 @@ function handleStreamChange(meetStreamTracks: MeetStreamTrack[]) {
  * changes.
  */
 export function createClient(
-    meetingSpaceId: string, numberOfVideoStreams: number,
-    enableAudioStreams: boolean, accessToken: string) {
-  const client = new MeetMediaApiClientImpl(
-      {meetingSpaceId, numberOfVideoStreams, enableAudioStreams, accessToken});
+  meetingSpaceId: string,
+  numberOfVideoStreams: number,
+  enableAudioStreams: boolean,
+  accessToken: string,
+) {
+  const client = new MeetMediaApiClientImpl({
+    meetingSpaceId,
+    numberOfVideoStreams,
+    enableAudioStreams,
+    accessToken,
+  });
   // tslint:disable-next-line:no-any
   (window as any).client = client;
   client.sessionStatus.subscribe(handleSessionChange);

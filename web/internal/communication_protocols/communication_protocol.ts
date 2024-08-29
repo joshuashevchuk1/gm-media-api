@@ -22,8 +22,9 @@
  * An abstract communication protocol.
  */
 export interface MediaApiCommunicationProtocol {
-  connectActiveConference(sdpOffer: string):
-      Promise<MediaApiCommunicationResponse>;
+  connectActiveConference(
+    sdpOffer: string,
+  ): Promise<MediaApiCommunicationResponse>;
 }
 
 /**
