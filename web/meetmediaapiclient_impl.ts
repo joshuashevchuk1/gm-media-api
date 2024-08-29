@@ -53,7 +53,7 @@ import {Subscribable} from './types/subscribable';
 const NUMBER_OF_AUDIO_VIRTUAL_SSRC = 3;
 
 const MINIMUM_VIDEO_STREAMS = 0;
-const MAXIMUM_VIDEO_STREAMS = 6;
+const MAXIMUM_VIDEO_STREAMS = 3;
 
 /**
  * Implementation of MeetMediaApiClient.
