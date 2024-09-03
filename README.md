@@ -28,7 +28,7 @@ limitations under the License.
 
 ## Building
 
-This repository contains two reference implementations and samples, TypeScript
+This repository contains two reference implementations and samples: TypeScript
 and C++. These are stored in the `web` and `native` directories respectively.
 The C++ implementation requires [Bazel](https://bazel.build/) in order to build and
 fetch many of the dependencies required. The TypeScript implementation can be built
