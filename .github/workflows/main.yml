@@ -37,12 +37,13 @@ jobs:
           gn gen out/Default --args='is_debug=false use_custom_libcxx=false rtc_include_tests=false rtc_build_examples=false dcheck_always_on=true rtc_use_x11=false use_rtti=true'
           ninja -C out/Default
           popd
+          echo "webrtc_path=$(pwd)" >> $GITHUB_ENV
           popd
 
     - name: build
       run: |
           pushd app
-          sed -i -e 's|webrtc_path = ".*"|webrtc_path = "`echo ${GITHUB_WORKSPACE}`/webrtc-checkout/"|g' WORKSPACE
+          sed -i -e 's|webrtc_path = ".*"|webrtc_path = "${{ env.webrtc_path }}/"|g' WORKSPACE
           bazel build ...
 
     - name: test
