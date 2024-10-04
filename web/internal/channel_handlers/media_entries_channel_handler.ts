@@ -28,11 +28,13 @@ import {
   MediaEntry,
   MediaLayout,
   MeetStreamTrack,
+  Participant,
 } from '../../types/mediatypes';
 import {
   InternalMediaEntry,
   InternalMediaLayout,
   InternalMeetStreamTrack,
+  InternalParticipant,
 } from '../internal_types';
 import {SubscribableDelegate} from '../subscribable_impl';
 import {createMediaEntry} from '../utils';
@@ -58,6 +60,13 @@ export class MediaEntriesChannelHandler {
       MediaLayout,
       InternalMediaLayout
     >(),
+    private readonly participantsDelegate: SubscribableDelegate<Participant[]>,
+    private readonly nameParticipantMap: Map<string, Participant>,
+    private readonly idParticipantMap: Map<number, Participant>,
+    private readonly internalParticipantMap: Map<
+      Participant,
+      InternalParticipant
+    >,
     private readonly channelLogger?: ChannelLogger,
   ) {
     this.channel.onmessage = (event) => {
@@ -123,6 +132,19 @@ export class MediaEntriesChannelHandler {
           const internalAudioStreamTrack =
             this.internalMeetStreamTrackMap.get(audioMeetStreamTrack);
           internalAudioStreamTrack!.mediaEntry.set(undefined);
+        }
+
+        // Remove relationship between media entry and participant.
+        const participant = internalMediaEntry!.participant.get();
+        if (participant) {
+          const internalParticipant =
+            this.internalParticipantMap.get(participant);
+          const newMediaEntries: MediaEntry[] =
+            internalParticipant!.mediaEntries
+              .get()
+              .filter((mediaEntry) => mediaEntry !== deletedMediaEntry);
+          internalParticipant!.mediaEntries.set(newMediaEntries);
+          internalMediaEntry!.participant.set(undefined);
         }
 
         // Remove from maps
@@ -225,6 +247,67 @@ export class MediaEntriesChannelHandler {
           }
         }
       }
+
+      // Assign participant to media entry
+      if (resource.mediaEntry.participant) {
+        const existingParticipant = this.nameParticipantMap.get(
+          resource.mediaEntry.participant,
+        );
+        if (existingParticipant) {
+          const internalParticipant =
+            this.internalParticipantMap.get(existingParticipant);
+          if (internalParticipant) {
+            const newMediaEntries: MediaEntry[] = [
+              ...internalParticipant.mediaEntries.get(),
+              mediaEntry!,
+            ];
+            internalParticipant.mediaEntries.set(newMediaEntries);
+          }
+          internalMediaEntry!.participant.set(existingParticipant);
+        } else {
+          // This is unexpected behavior, but technically possible.
+          this.channelLogger?.log(
+            LogLevel.ERRORS,
+            'Media entries channel: participant not found in name participant map' +
+              ' creating participant',
+          );
+          const subscribableDelegate = new SubscribableDelegate<MediaEntry[]>([
+            mediaEntry!,
+          ]);
+          const newParticipant: Participant = {
+            participant: {
+              name: resource.mediaEntry.participant,
+              anonymousUser: {},
+            },
+            mediaEntries: subscribableDelegate.getSubscribable(),
+          };
+          const internalParticipant: InternalParticipant = {
+            name: resource.mediaEntry.participant,
+            // TODO: Use participant resource name instead of id.
+            // tslint:disable-next-line:deprecation
+            id: resource.mediaEntry.participantId,
+            mediaEntries: subscribableDelegate,
+          };
+          this.nameParticipantMap.set(
+            resource.mediaEntry.participant,
+            newParticipant,
+          );
+          this.internalParticipantMap.set(newParticipant, internalParticipant);
+          // TODO: Use participant resource name instead of id.
+          // tslint:disable-next-line:deprecation
+          if (resource.mediaEntry.participantId) {
+            this.idParticipantMap.set(
+              // TODO: Use participant resource name instead of id.
+              // tslint:disable-next-line:deprecation
+              resource.mediaEntry.participantId,
+              newParticipant,
+            );
+          }
+          const participantArray = this.participantsDelegate.get();
+          this.participantsDelegate.set([...participantArray, newParticipant]);
+          internalMediaEntry!.participant.set(newParticipant);
+        }
+      }
     });
 
     // Update media entry collection.
@@ -251,14 +334,14 @@ export class MediaEntriesChannelHandler {
     const contributingSources: RTCRtpContributingSource[] =
       internalAudioMeetStreamTrack.receiver.getContributingSources();
 
-    let audioCsrcFound = false;
     for (const contributingSource of contributingSources) {
       if (contributingSource.source === internalMediaEntry.audioCsrc) {
-        audioCsrcFound = true;
-        break;
+        // audioCsrc found in contributing sources.
+        return true;
       }
     }
-    return audioCsrcFound;
+    // audioCsrc not found in contributing sources.
+    return false;
   }
 
   private isVideoMeetStreamTrackAssignedToMediaEntry(
@@ -275,13 +358,13 @@ export class MediaEntriesChannelHandler {
     const contributingSources: RTCRtpContributingSource[] =
       internalVideoMeetStreamTrack.receiver.getContributingSources();
 
-    let videoCsrcFound = false;
     for (const contributingSource of contributingSources) {
       if (contributingSource.source === internalMediaEntry.videoCsrc) {
-        videoCsrcFound = true;
-        break;
+        // videoCsrc found in contributing sources.
+        return true;
       }
     }
-    return videoCsrcFound;
+    // videoCsrc not found in contributing sources.
+    return false;
   }
 }

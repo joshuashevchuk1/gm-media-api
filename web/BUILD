@@ -15,7 +15,6 @@
 load("//:build_defs.bzl", "ts_library")
 
 package(default_visibility = [
-    "//java/com/google/communication/mediaapi/demo/ui/mediaapidemo:__pkg__",
     "@media_api_samples//web:__subpackages__",
 ])
 

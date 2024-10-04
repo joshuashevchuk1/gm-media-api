@@ -1,0 +1,102 @@
+/*
+ * Copyright 2024 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef NATIVE_API_PARTICIPANTS_RESOURCE_H_
+#define NATIVE_API_PARTICIPANTS_RESOURCE_H_
+
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace meet {
+
+// Signed in user type, always has a unique id and display name.
+struct SignedInUser {
+  // Unique ID for the user. Interoperable with Admin SDK API and People API.
+  // Format: `users/{user}`
+  std::string user;
+  // For a personal device, it's the user's first name and last name.
+  // For a robot account, it's the administrator-specified device name. For
+  // example, "Altostrat Room".
+  std::string display_name;
+};
+
+// Anonymous user.
+struct AnonymousUser {
+  // User provided name when they join a conference anonymously.
+  std::string display_name;
+};
+
+// Phone user, always has a display name. User dialing in from a phone where the
+// user's identity is unknown because they haven't signed in with a Google
+// Account.
+struct PhoneUser {
+  // Partially redacted user's phone number when calling.
+  std::string display_name;
+};
+
+struct Participant {
+  enum class Type { kSignedInUser = 0, kAnonymousUser = 1, kPhoneUser = 2 };
+
+  // Numeric ID for the participant.
+  //
+  // Will eventually be deprecated in favor of `name`.
+  int32_t participant_id;
+
+  // Resource name for a participant. Interoperable with the Meet REST API.
+  // Format: `conferenceRecords/{conference_record}/participants/{name}`.
+  std::string name;
+  // The type of participant.
+  //
+  // This is used to determine which of the following fields are populated.
+  Type type;
+  std::optional<SignedInUser> signed_in_user;
+  std::optional<AnonymousUser> anonymous_user;
+  std::optional<PhoneUser> phone_user;
+};
+
+// A resource snapshot managed by the server and replicated to the client.
+struct ParticipantResourceSnapshot {
+  // The resource ID of the resource being updated.
+  int64_t id;
+
+  std::optional<Participant> participant;
+};
+
+struct ParticipantDeletedResource {
+  // The resource ID of the resource being deleted.
+  int64_t id;
+
+  // The type of resource being deleted.
+  std::optional<bool> participant;
+};
+
+// The top-level transport container for messages converted from proto to C++
+// struct.
+struct ParticipantsChannelToClient {
+  // Resource snapshots. There is no implied order between the snapshots in the
+  // list.
+  std::vector<ParticipantResourceSnapshot> resources;
+
+  // The list of deleted resources. There is no order between the entries in
+  // the list.
+  std::vector<ParticipantDeletedResource> deleted_resources;
+};
+
+}  // namespace meet
+
+#endif  // NATIVE_API_PARTICIPANTS_RESOURCE_H_

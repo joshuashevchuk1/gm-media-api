@@ -112,7 +112,7 @@ export declare interface SessionStatus extends ResourceSnapshot {
   sessionStatus: {
     /**
      * - `STATE_WAITING`: Session is waiting to be admitted into the meeting.
-     * The client may never observe this state if it was admitted or rejected
+     *   The client may never observe this state if it was admitted or rejected
      *   quickly.
      * - `STATE_JOINED`: Session has fully joined the meeting.
      * - `STATE_DISCONNECTED`: Session is not connected to the meeting.
@@ -130,52 +130,107 @@ export declare interface ParticipantsChannelToClient {
   /**
    * List of resource snapshots managed by the server, with no implied order.
    */
-  resources?: LegacyParticipant | Participant[];
+  resources?: ParticipantResource[];
   /** List of deleted resources with no implied order. */
   deletedResources?: DeletedParticipant[];
 }
 
+// (-- LINT.IfChange --)
 /**
- * Resource snapshot for a participant.
+ * Participant resource type
  */
-export declare interface LegacyParticipant extends ResourceSnapshot {
-  participantId: number;
-  participantInfo: {
-    /** Human readable name of a participant in the meeting */
-    displayName: string;
-    avatarUrl: string;
-  };
-  /**
-   * - `PERSON`: The participant is a single person using the Meet
-   *   application from a web or mobile device.
-   * - `ROOM_DEVICE`: The participant is a rooms device in a meeting
-   *   space.
-   * - `DIAL_IN`: The participant is a telephony client that has dialed
-   *   in.
-   */
-  identityType: 'PERSON' | 'ROOM_DEVICE' | 'DIAL_IN';
+export type ParticipantResourceType =
+  | SignedInParticipant
+  | AnonymousParticipant
+  | PhoneParticipant;
+
+/**
+ * Base participant resource type
+ */
+export declare interface ParticipantResource extends ResourceSnapshot {
+  participant: BaseParticipant;
 }
 
 /**
- * Resource snapshot for a participant.
+ * Resource snapshot for a base participant.
  */
-export declare interface Participant extends ResourceSnapshot {
-  participantId: number;
-  participantInfo: {
-    /** Human readable name of a participant in the meeting */
-    displayName: string;
-    avatarUrl: string;
-  };
+export declare interface BaseParticipant extends ResourceSnapshot {
   /**
-   * - `PERSON`: The participant is a single person using the Meet
-   *   application from a web or mobile device.
-   * - `ROOM_DEVICE`: The participant is a rooms device in a meeting
-   *   space.
-   * - `DIAL_IN`: The participant is a telephony client that has dialed
-   *   in
+   * Resource name for a participant.
+   * Format: `conferenceRecords/{conference_record}/participants/{participant}`
    */
-  identityType: 'PERSON' | 'ROOM_DEVICE' | 'DIAL_IN';
+  name: string;
+  participantId: number;
+  signedInUser?: SignedInUser;
+  anonymousUser?: AnonymousUser;
+  phoneUser?: PhoneUser;
 }
+
+/**
+ * Resource snapshot for a signed in participant.
+ */
+export declare interface SignedInParticipant extends BaseParticipant {
+  signedInUser: SignedInUser;
+  anonymousUser: never;
+  phoneUser: never;
+}
+
+/**
+ * Signed in user type, always has a unique id and display name
+ */
+export declare interface SignedInUser {
+  /**
+   * Unique ID for the user. Interoperable with Admin SDK API and People API.
+   * Format: `users/{user}`
+   */
+  user: string;
+
+  /**
+   * For a personal device, it's the user's first name and last name.
+   * For a robot account, it's the administrator-specified device name. For
+   * example, "Altostrat Room".
+   */
+  displayName: string;
+}
+
+/**
+ * Resource snapshot for an anonymous participant.
+ */
+export declare interface AnonymousParticipant extends BaseParticipant {
+  anonymousUser: AnonymousUser;
+  signedInUser: never;
+  phoneUser: never;
+}
+
+/**
+ * Anonymous user type, we expect there to always be a display name.
+ */
+export declare interface AnonymousUser {
+  /** User provided name when they join a conference anonymously. */
+  displayName: string;
+}
+
+/**
+ * Resource snapshot for a phone participant.
+ */
+export declare interface PhoneParticipant extends BaseParticipant {
+  phoneUser: PhoneUser;
+  anonymousUser: never;
+  signedInUser: never;
+}
+
+/**
+ * Phone user type, always has a display name. User dialing in from a phone
+ * where the user's identity is unknown because they haven't signed in with a
+ * Google Account.
+ */
+export declare interface PhoneUser {
+  /** Partially redacted user's phone number when calling. */
+  displayName: string;
+}
+// (--
+// LINT.ThenChange(//depot/google3/google/apps/meet/v2main/resource.proto)
+// --)
 
 /**
  * Deleted resource for a participant.
@@ -204,12 +259,33 @@ export declare interface MediaEntriesChannelToClient {
 export declare interface MediaEntry extends ResourceSnapshot {
   mediaEntry: {
     /**
-     * ID associated with the participant producing the stream. Use this to
-     * correlate with other media entries produced by the same participant.
+     * Participant ID for the media entry.
+     * @deprecated Use participant instead.
+     */
+    participantId: number;
+
+    /**
+     * Participant resource name, not display name. There is a many
+     * (participant) to one (media entry) relationship.
+     * See
+     * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
+     * for more info.
+     * Format is
+     * `conferenceRecords/{conference_record}/participants/{participant}` Use this
+     * to correlate with other media entries produced by the same participant.
      * For example, a participant with multiple devices active in the same
      * meeting.
      */
-    participantId: number;
+    participant: string;
+
+    /**
+     * Participant session name. There should be a one to one mapping of session
+     * to Media Entry. See
+     * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions
+     * for more info. Format is
+     * `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
+     */
+    session: string;
     /** CSRC for any audio stream contributed by this participant. */
     audioCsrc?: number;
     /** CSRCs for any video streams contributed by this participant. */

@@ -52,9 +52,8 @@ void MeetMediaStreamTrack::MaybeNotifyFirstFrameReceived(uint32_t ssrc) {
   }
 
   if (ssrc == 0) {
-    LOG(WARNING) << "First frame received for video stream with MID " << mid_
-                 << " and MSID " << receiver_->stream_ids().at(0)
-                 << " without SSRC.";
+    LOG(WARNING) << "First frame received for stream with MID and MSID" << mid_
+                 << receiver_->stream_ids().at(0) << " without SSRC.";
     return;
   }
 

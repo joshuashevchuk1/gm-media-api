@@ -33,6 +33,7 @@ import {LogEvent, LogLevel, LogSourceType} from '../../types/mediatypes';
 export class ChannelLogger {
   constructor(
     private readonly logSourceType: LogSourceType,
+    // @ts-ignore
     private readonly callback = (logEvent: LogEvent) => {},
   ) {}
 

@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef NATIVE_INTERNAL_MEDIA_ENTRIES_RESOURCE_HANDLER_H_
-#define NATIVE_INTERNAL_MEDIA_ENTRIES_RESOURCE_HANDLER_H_
+#ifndef NATIVE_INTERNAL_PARTICIPANTS_RESOURCE_HANDLER_H_
+#define NATIVE_INTERNAL_PARTICIPANTS_RESOURCE_HANDLER_H_
 
 #include <string>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "native/api/media_entries_resource.h"
+#include "native/api/participants_resource.h"
 #include "native/internal/resource_handler_interface.h"
 
 namespace meet {
 
-class MediaEntriesResourceHandler
-    : public ResourceHandlerInterface<MediaEntriesChannelToClient,
+class ParticipantsResourceHandler
+    : public ResourceHandlerInterface<ParticipantsChannelToClient,
                                       NoResourceRequestsFromClient> {
  public:
-  MediaEntriesResourceHandler() = default;
-  ~MediaEntriesResourceHandler() = default;
+  ParticipantsResourceHandler() = default;
+  ~ParticipantsResourceHandler() = default;
 
-  absl::StatusOr<MediaEntriesChannelToClient> ParseUpdate(
+  absl::StatusOr<ParticipantsChannelToClient> ParseUpdate(
       absl::string_view update) override;
 
   absl::StatusOr<std::string> Stringify(
@@ -44,12 +44,12 @@ class MediaEntriesResourceHandler
         "client.");
   }
 
-  // MediaEntriesResourceHandler is neither copyable nor movable.
-  MediaEntriesResourceHandler(const MediaEntriesResourceHandler&) = delete;
-  MediaEntriesResourceHandler& operator=(const MediaEntriesResourceHandler&) =
+  // ParticipantsResourceHandler is neither copyable nor movable.
+  ParticipantsResourceHandler(const ParticipantsResourceHandler&) = delete;
+  ParticipantsResourceHandler& operator=(const ParticipantsResourceHandler&) =
       delete;
 };
 
 }  // namespace meet
 
-#endif  // NATIVE_INTERNAL_MEDIA_ENTRIES_RESOURCE_HANDLER_H_
+#endif  // NATIVE_INTERNAL_PARTICIPANTS_RESOURCE_HANDLER_H_

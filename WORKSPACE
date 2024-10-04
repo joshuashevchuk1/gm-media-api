@@ -109,6 +109,7 @@ http_archive(
 
 http_archive(
     name = "curl",
+    integrity = "sha256-KREkoAfuURGZeCWUCzh2swSPfTHnPpyqaBuA/kiy3NU=",
     urls = ["https://curl.se/download/curl-8.9.1.tar.gz"],
     strip_prefix = "curl-8.9.1",
     build_file = "curl.BUILD",
@@ -129,10 +130,9 @@ new_local_repository(
     build_file = "webrtc.BUILD",
 )
 
-new_local_repository(
+local_repository(
     name = "boringssl",
     path = webrtc_path + "webrtc/third_party/boringssl/src",
-    build_file = "boringssl.BUILD",
 )
 
 # === Python ===

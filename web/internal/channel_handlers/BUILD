@@ -24,6 +24,7 @@ ts_library(
         "channel_logger.ts",
         "media_entries_channel_handler.ts",
         "media_stats_channel_handler.ts",
+        "participants_channel_handler.ts",
         "session_control_channel_handler.ts",
         "video_assignment_channel_handler.ts",
     ],

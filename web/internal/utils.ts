@@ -100,6 +100,7 @@ export function createMediaEntry({
     mediaLayout: mediaLayoutDelegate,
     audioMeetStreamTrack: audioMeetStreamTrackDelegate,
     videoMeetStreamTrack: videoMeetStreamTrackDelegate,
+    participant: participantDelegate,
     videoSsrc,
     audioCsrc,
     videoCsrc,

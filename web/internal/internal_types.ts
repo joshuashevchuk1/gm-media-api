@@ -19,7 +19,12 @@
  * used outside of the client.
  */
 
-import {MediaEntry, MediaLayout, MeetStreamTrack} from '../types/mediatypes';
+import {
+  MediaEntry,
+  MediaLayout,
+  MeetStreamTrack,
+  Participant,
+} from '../types/mediatypes';
 
 import {SubscribableDelegate} from './subscribable_impl';
 
@@ -43,6 +48,7 @@ export interface InternalMediaEntry {
   readonly audioMeetStreamTrack: SubscribableDelegate<
     MeetStreamTrack | undefined
   >;
+  readonly participant: SubscribableDelegate<Participant | undefined>;
 }
 
 /**
@@ -62,4 +68,14 @@ export interface InternalMediaLayout {
 export interface InternalMeetStreamTrack {
   readonly mediaEntry: SubscribableDelegate<MediaEntry | undefined>;
   readonly receiver: RTCRtpReceiver;
+}
+
+/**
+ * Internal representation of a participant. Has handles on the
+ * subscribable delegates.
+ */
+export interface InternalParticipant {
+  readonly id: number;
+  readonly name: string;
+  readonly mediaEntries: SubscribableDelegate<MediaEntry[]>;
 }

@@ -27,7 +27,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
+#include "native/api/session_control_resource.h"
 
 namespace meet {
 namespace {

@@ -24,7 +24,10 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
+#include "native/api/media_entries_resource.h"
+#include "native/api/participants_resource.h"
+#include "native/api/session_control_resource.h"
+#include "native/api/video_assignment_resource.h"
 
 namespace meet {
 using Json = ::nlohmann::json;
@@ -70,6 +73,60 @@ inline std::string VideoAssignmentStringify(
   return json_update.dump();
 }
 
+inline std::string ParticipantsStringify(ParticipantsChannelToClient& update) {
+  nlohmann::basic_json<> json_update;
+
+  if (!update.resources.empty()) {
+    nlohmann::basic_json<> resources;
+    for (const auto& resource : update.resources) {
+      nlohmann::basic_json<> resource_snapshot;
+      resource_snapshot["id"] = resource.id;
+      if (resource.participant.has_value()) {
+        nlohmann::basic_json<> participant;
+        participant["participantId"] = resource.participant->participant_id;
+        participant["name"] = resource.participant->name;
+        switch (resource.participant->type) {
+          case Participant::Type::kSignedInUser:
+            participant["signedInUser"] = nlohmann::json::value_t::object;
+            participant["signedInUser"]["user"] =
+                resource.participant->signed_in_user->user;
+            participant["signedInUser"]["displayName"] =
+                resource.participant->signed_in_user->display_name;
+            break;
+          case Participant::Type::kAnonymousUser:
+            participant["anonymousUser"] = nlohmann::json::value_t::object;
+            participant["anonymousUser"]["displayName"] =
+                resource.participant->anonymous_user->display_name;
+            break;
+          case Participant::Type::kPhoneUser:
+            participant["phoneUser"] = nlohmann::json::value_t::object;
+            participant["phoneUser"]["displayName"] =
+                resource.participant->phone_user->display_name;
+            break;
+        }
+        resource_snapshot["participant"] = std::move(participant);
+      }
+      resources.push_back(std::move(resource_snapshot));
+    }
+    json_update["resources"] = std::move(resources);
+  }
+
+  if (!update.deleted_resources.empty()) {
+    nlohmann::basic_json<> deleted_resources;
+    for (const auto& resource : update.deleted_resources) {
+      nlohmann::basic_json<> deleted_resource;
+      deleted_resource["id"] = resource.id;
+      if (resource.participant.has_value()) {
+        deleted_resource["participant"] = nlohmann::json::value_t::object;
+      }
+      deleted_resources.push_back(std::move(deleted_resource));
+    }
+    json_update["deletedResources"] = std::move(deleted_resources);
+  }
+
+  return json_update.dump();
+}
+
 inline std::string MediaEntriesStringify(MediaEntriesChannelToClient& update) {
   nlohmann::basic_json<> json_update;
 
@@ -80,7 +137,8 @@ inline std::string MediaEntriesStringify(MediaEntriesChannelToClient& update) {
       resource_snapshot["id"] = resource.id;
       if (resource.media_entry.has_value()) {
         nlohmann::basic_json<> media_entry;
-        media_entry["participantId"] = resource.media_entry->participant_id;
+        media_entry["participantName"] = resource.media_entry->participant_name;
+        media_entry["sessionName"] = resource.media_entry->session_name;
         media_entry["audioCsrc"] = resource.media_entry->audio_csrc;
         media_entry["videoCsrcs"] = resource.media_entry->video_csrcs;
         media_entry["presenter"] = resource.media_entry->presenter;

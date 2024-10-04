@@ -18,7 +18,6 @@
 #define NATIVE_INTERNAL_TESTING_MOCK_MEET_MEDIA_API_SESSION_OBSERVER_H_
 
 #include "gmock/gmock.h"
-#include "native/api/conference_resources.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "webrtc/api/scoped_refptr.h"
 #include "webrtc/rtc_base/ref_counted_object.h"

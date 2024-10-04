@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -27,7 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
+#include "native/api/media_entries_resource.h"
 
 namespace meet {
 namespace {
@@ -86,13 +87,19 @@ MediaEntriesResourceHandler::ParseUpdate(absl::string_view update) {
           media_entry_field != nullptr) {
         MediaEntry media_entry;
 
-        // Resources.resourceSnapshot.mediaEntry.participantId
-        if (const Json* participant_id_field =
-                FindOrNull(*media_entry_field, "participantId");
-            participant_id_field != nullptr) {
-          media_entry.participant_id = participant_id_field->get<int32_t>();
-        } else {
-          media_entry.participant_id = 0;
+        // Resources.resourceSnapshot.mediaEntry.participantName
+        if (const Json* participant_name_field =
+                FindOrNull(*media_entry_field, "participant");
+            participant_name_field != nullptr) {
+          media_entry.participant_name =
+              participant_name_field->get<std::string>();
+        }
+
+        // Resources.resourceSnapshot.mediaEntry.sessionName
+        if (const Json* session_name_field =
+                FindOrNull(*media_entry_field, "session");
+            session_name_field != nullptr) {
+          media_entry.session_name = session_name_field->get<std::string>();
         }
 
         // Resources.resourceSnapshot.mediaEntry.audioCsrc

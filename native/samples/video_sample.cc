@@ -15,6 +15,7 @@
  */
 
 
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -25,9 +26,9 @@
 #include "absl/flags/usage.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/synchronization/notification.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "native/api/conference_resources.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "native/samples/media_api_impls.h"
 #include "webrtc/api/make_ref_counted.h"
@@ -36,8 +37,7 @@ ABSL_FLAG(std::string, output_file_prefix, "/tmp/video_sink_ssrc_",
           "Path prefix where files will be written. The file names will be "
           "prefix_<ssrc>_video.txt and prefix_<ssrc>_audio.pcm");
 
-ABSL_FLAG(std::string, meet_api_url,
-          "https://meet.googleapis.com/v2beta/",
+ABSL_FLAG(std::string, meet_api_url, "https://meet.googleapis.com/v2beta/",
           "The base URL to use for the Meet API.");
 
 ABSL_FLAG(std::string, meeting_space_id, "",
@@ -85,8 +85,10 @@ int main(int argc, char** argv) {
       .enable_video_assignment_resource = true,
   };
 
+  auto session_observer =
+      rtc::make_ref_counted<media_api_impls::SessionObserver>();
   auto client_create_status = meet::MeetMediaApiClientInterface::Create(
-      api_config, rtc::make_ref_counted<media_api_impls::SessionObserver>(),
+      api_config, session_observer,
       rtc::make_ref_counted<media_api_impls::SinkFactory>(output_file_prefix));
 
   if (!client_create_status.ok()) {
@@ -159,8 +161,43 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // TODO: b/359387259 - Send a leave request to end the session once it's been
-  // implemented in the client.
   absl::SleepFor(collection_duration);
+
+  absl::Notification leave_notification;
+  int64_t leave_request_id = 7;
+  absl::Status leave_response_status;
+  auto leave_callback = [&leave_notification, &leave_request_id,
+                         &leave_response_status](int64_t request_id,
+                                                 absl::Status status) {
+    // Wait for the response to the leave request.
+    if (request_id == leave_request_id) {
+      leave_response_status = std::move(status);
+      leave_notification.Notify();
+    }
+  };
+  session_observer->SetResourceResponseCallback(leave_request_id,
+                                                std::move(leave_callback));
+
+  // Leave the session with a unique request ID.
+  absl::Status leave_status = meet_client->LeaveConference(leave_request_id);
+  if (!leave_status.ok()) {
+    LOG(ERROR) << "Failed to leave conference: " << leave_status << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (!leave_notification.WaitForNotificationWithTimeout(absl::Seconds(5))) {
+    LOG(ERROR) << "Timed out waiting for leave response.";
+    return EXIT_FAILURE;
+  }
+
+  if (!leave_response_status.ok()) {
+    LOG(ERROR) << "Failed to leave conference gracefully: "
+               << leave_response_status
+               << ". Client will be forcefully removed via ICE termination. "
+                  "This may delay the conference state from being updated "
+                  "with respect to this client's removal."
+               << std::endl;
+    return EXIT_FAILURE;
+  }
   return EXIT_SUCCESS;
 }

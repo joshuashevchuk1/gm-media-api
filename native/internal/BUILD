@@ -29,6 +29,7 @@ cc_library(
         ":meet_media_api_audio_device_module",
         ":meet_media_streams",
         ":meet_session_observers",
+        ":participants_resource_handler",
         ":resource_handler_interface",
         ":session_control_resource_handler",
         ":video_assignment_resource_handler",
@@ -40,9 +41,12 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_googleurl//url",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:media_entries_resource",
         "@media_api_samples//native/api:meet_media_api_client_interface",
         "@media_api_samples//native/api:meet_media_sink_interface",
+        "@media_api_samples//native/api:participants_resource",
+        "@media_api_samples//native/api:session_control_resource",
+        "@media_api_samples//native/api:video_assignment_resource",
         "@nlohmann_json//:json",
         "@webrtc",
     ],
@@ -182,8 +186,11 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:media_entries_resource",
         "@media_api_samples//native/api:meet_media_api_client_interface",
+        "@media_api_samples//native/api:participants_resource",
+        "@media_api_samples//native/api:session_control_resource",
+        "@media_api_samples//native/api:video_assignment_resource",
         "@webrtc",
     ],
 )
@@ -200,7 +207,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:media_entries_resource",
         "@nlohmann_json//:json",
     ],
 )
@@ -212,7 +219,37 @@ cc_test(
         ":media_entries_resource_handler",
         "@com_google_absl//absl/types:optional",
         "@com_google_googletest//:gtest_main",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:media_entries_resource",
+    ],
+)
+
+cc_library(
+    name = "participants_resource_handler",
+    srcs = ["participants_resource_handler.cc"],
+    hdrs = [
+        "participants_resource_handler.h",
+    ],
+    deps = [
+        ":resource_handler_interface",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@media_api_samples//native/api:participants_resource",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "participants_resource_handler_test",
+    srcs = ["participants_resource_handler_test.cc"],
+    deps = [
+        ":participants_resource_handler",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_googletest//:gtest_main",
+        "@media_api_samples//native/api:participants_resource",
     ],
 )
 
@@ -228,7 +265,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:session_control_resource",
         "@nlohmann_json//:json",
     ],
 )
@@ -242,7 +279,6 @@ cc_test(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
-        "@media_api_samples//native/api:conference_resources",
         "@nlohmann_json//:json",
     ],
 )
@@ -259,7 +295,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:video_assignment_resource",
         "@nlohmann_json//:json",
     ],
 )
@@ -272,7 +308,7 @@ cc_test(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_googletest//:gtest_main",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:video_assignment_resource",
         "@nlohmann_json//:json",
     ],
 )
@@ -309,7 +345,6 @@ cc_library(
     ],
     deps = [
         "@com_google_googletest//:gtest",
-        "@media_api_samples//native/api:conference_resources",
         "@media_api_samples//native/api:meet_media_api_client_interface",
         "@webrtc",
     ],

@@ -21,11 +21,16 @@
 #include <fstream>
 #include <ios>
 #include <ostream>
+#include <utility>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
+#include "native/api/meet_media_api_client_interface.h"
 #include "native/api/meet_media_sink_interface.h"
+#include "native/samples/resource_parsers.h"
 #include "webrtc/api/make_ref_counted.h"
 #include "webrtc/api/scoped_refptr.h"
 
@@ -98,6 +103,77 @@ SinkFactory::CreateVideoSink() {
 rtc::scoped_refptr<meet::MeetAudioSinkInterface>
 SinkFactory::CreateAudioSink() {
   return rtc::make_ref_counted<AudioSink>(file_location_);
+}
+
+void SessionObserver::OnResourceUpdate(ResourceUpdate update) {
+  int64_t request_id = 0;
+  absl::Status status = absl::OkStatus();
+
+  switch (update.hint) {
+    case meet::ResourceHint::kMediaEntries:
+      LOG(INFO) << "Received media entries update: "
+                << MediaEntriesStringify(update.media_entries_update.value());
+      break;
+    case meet::ResourceHint::kParticipants:
+      LOG(INFO) << "Received participants update: "
+                << ParticipantsStringify(update.participants_update.value());
+      break;
+    case meet::ResourceHint::kSessionControl:
+      LOG(INFO) << "Received session control update: "
+                << SessionControlStringify(
+                       update.session_control_update.value());
+
+      if (update.session_control_update.has_value() &&
+          update.session_control_update.value().response.has_value()) {
+        request_id =
+            update.session_control_update.value().response.value().request_id;
+        status = update.session_control_update.value().response.value().status;
+      } else {
+        LOG(ERROR) << "Session control update did not contain a response.";
+      }
+      break;
+    case meet::ResourceHint::kVideoAssignment:
+      LOG(INFO) << "Received video assignment update: "
+                << VideoAssignmentStringify(
+                       update.video_assignment_update.value());
+
+      if (update.video_assignment_update.has_value() &&
+          update.video_assignment_update.value().response.has_value()) {
+        request_id =
+            update.video_assignment_update.value().response.value().request_id;
+        status = update.video_assignment_update.value().response.value().status;
+      } else {
+        LOG(ERROR) << "Video assignment update did not contain a response.";
+      }
+      break;
+    default:
+      LOG(INFO) << "Received unknown resource update: ";
+      break;
+  }
+
+  absl::MutexLock lock(&response_callback_map_mutex_);
+  if (auto& callback = response_callbacks_[request_id];
+      callback != nullptr && request_id != 0) {
+    callback(request_id, status);
+    response_callbacks_.erase(request_id);
+  }
+}
+
+void SessionObserver::OnResourceRequestFailure(ResourceRequestError error) {
+  LOG(INFO) << "OnResourceRequestFailure: " << error.status;
+
+  int64_t request_id = error.request_id;
+  absl::MutexLock lock(&response_callback_map_mutex_);
+  if (auto& callback = response_callbacks_[request_id]; callback != nullptr) {
+    callback(request_id, error.status);
+    response_callbacks_.erase(request_id);
+  }
+}
+
+void SessionObserver::SetResourceResponseCallback(
+    int64_t request_id, ResourceResponseCallback callback) {
+  absl::MutexLock lock(&response_callback_map_mutex_);
+  response_callbacks_[request_id] = std::move(callback);
 }
 
 }  // namespace media_api_impls

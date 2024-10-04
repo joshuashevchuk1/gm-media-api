@@ -29,8 +29,11 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "native/api/conference_resources.h"
+#include "native/api/media_entries_resource.h"
 #include "native/api/meet_media_api_client_interface.h"
+#include "native/api/participants_resource.h"
+#include "native/api/session_control_resource.h"
+#include "native/api/video_assignment_resource.h"
 #include "native/internal/resource_handler_interface.h"
 #include "webrtc/api/data_channel_interface.h"
 #include "webrtc/api/peer_connection_interface.h"
@@ -126,8 +129,9 @@ void ConferenceResourceDataChannel<ToClientUpdate, FromClientRequest>::
       return;
     }
 
-    absl::StatusOr<ResourceUpdate> create_update_status =
-        CreateResourceUpdate(*std::move(update_parse_status));
+    absl::StatusOr<MeetMediaApiSessionObserverInterface::ResourceUpdate>
+        create_update_status =
+            CreateResourceUpdate(*std::move(update_parse_status));
     if (!create_update_status.ok()) {
       LOG(ERROR) << "Received " << label()
                  << " resource update but failed to create ResourceUpdate: "
@@ -149,12 +153,12 @@ ConferenceResourceDataChannel<ToClientUpdate, FromClientRequest>::SendRequest(
         ": Data channel is null. This should never happen yet here we are."));
   }
 
-  if (data_channel_->state() != kOpen) {
+  if (webrtc::DataChannelInterface::DataState state = data_channel_->state();
+      state != kOpen) {
     return absl::FailedPreconditionError(absl::StrCat(
         "Failed to send request on data channel ", data_channel_label_,
         ". Data channel state ",
-        webrtc::DataChannelInterface::DataStateString(data_channel_->state()),
-        " is not open."));
+        webrtc::DataChannelInterface::DataStateString(state), " is not open."));
   }
 
   absl::StatusOr<std::string> stringify_status =
@@ -182,7 +186,7 @@ ConferenceResourceDataChannel<ToClientUpdate, FromClientRequest>::SendRequest(
 
 template <typename ToClientUpdate, typename FromClientRequest>
 int64_t ConferenceResourceDataChannel<ToClientUpdate, FromClientRequest>::
-        ExtractRequestId(const FromClientRequest& request) {
+    ExtractRequestId(const FromClientRequest& request) {
   // Only session control, video assignment, and stats resources accept requests
   // from the client.
   switch (StringToResourceHint(label())) {
@@ -204,37 +208,49 @@ int64_t ConferenceResourceDataChannel<ToClientUpdate, FromClientRequest>::
 }
 
 template <typename ToClientUpdate, typename FromClientRequest>
-absl::StatusOr<ResourceUpdate> ConferenceResourceDataChannel<
-    ToClientUpdate,
-    FromClientRequest>::CreateResourceUpdate(const ToClientUpdate update) {
+absl::StatusOr<MeetMediaApiSessionObserverInterface::ResourceUpdate>
+ConferenceResourceDataChannel<ToClientUpdate, FromClientRequest>::
+    CreateResourceUpdate(const ToClientUpdate update) {
   switch (StringToResourceHint(label())) {
     case ResourceHint::kSessionControl:
       if constexpr (std::is_same_v<ToClientUpdate,
                                    SessionControlChannelToClient>) {
-        return ResourceUpdate{.hint = ResourceHint::kSessionControl,
-                              .session_control_update = std::move(update)};
+        return MeetMediaApiSessionObserverInterface::ResourceUpdate{
+            .hint = ResourceHint::kSessionControl,
+            .session_control_update = std::move(update)};
       }
       return absl::InvalidArgumentError(
-          absl::StrCat("Incorrect update type for SessionControl"));
+          "Incorrect update type for SessionControl");
     case ResourceHint::kVideoAssignment:
       if constexpr (std::is_same_v<ToClientUpdate,
                                    VideoAssignmentChannelToClient>) {
-        return ResourceUpdate{.hint = ResourceHint::kVideoAssignment,
-                              .video_assignment_update = std::move(update)};
+        return MeetMediaApiSessionObserverInterface::ResourceUpdate{
+            .hint = ResourceHint::kVideoAssignment,
+            .video_assignment_update = std::move(update)};
       }
       return absl::InvalidArgumentError(
-          absl::StrCat("Incorrect update type for VideoAssignment"));
+          "Incorrect update type for VideoAssignment");
     case ResourceHint::kMediaEntries:
       if constexpr (std::is_same_v<ToClientUpdate,
                                    MediaEntriesChannelToClient>) {
-        return ResourceUpdate{.hint = ResourceHint::kMediaEntries,
-                              .media_entries_update = std::move(update)};
+        return MeetMediaApiSessionObserverInterface::ResourceUpdate{
+            .hint = ResourceHint::kMediaEntries,
+            .media_entries_update = std::move(update)};
       }
       return absl::InvalidArgumentError(
-          absl::StrCat("Incorrect update type for MediaEntries"));
+          "Incorrect update type for MediaEntries");
+    case ResourceHint::kParticipants:
+      if constexpr (std::is_same_v<ToClientUpdate,
+                                   ParticipantsChannelToClient>) {
+        return MeetMediaApiSessionObserverInterface::ResourceUpdate{
+            .hint = ResourceHint::kParticipants,
+            .participants_update = std::move(update)};
+      }
+      return absl::InvalidArgumentError(
+          "Incorrect update type for Participants");
 
-    // TDOO: b/347055783 - Add support for Participants and Stats resource
-    // updates once they've been implemented in the backend.
+    // TDOO: b/347055783 - Add support for Stats resource updates once they've
+    // been implemented in the backend.
     default:
       return absl::InvalidArgumentError(
           absl::StrCat("Unknown resource hint: ", label()));
@@ -243,6 +259,8 @@ absl::StatusOr<ResourceUpdate> ConferenceResourceDataChannel<
 
 // Types that are supported.
 template class ConferenceResourceDataChannel<MediaEntriesChannelToClient,
+                                             NoResourceRequestsFromClient>;
+template class ConferenceResourceDataChannel<ParticipantsChannelToClient,
                                              NoResourceRequestsFromClient>;
 template class ConferenceResourceDataChannel<VideoAssignmentChannelToClient,
                                              VideoAssignmentChannelFromClient>;

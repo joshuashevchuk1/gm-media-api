@@ -27,7 +27,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
 
 namespace meet {
 namespace {

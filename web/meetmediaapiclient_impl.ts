@@ -17,6 +17,7 @@
 import {ChannelLogger} from './internal/channel_handlers/channel_logger';
 import {MediaEntriesChannelHandler} from './internal/channel_handlers/media_entries_channel_handler';
 import {MediaStatsChannelHandler} from './internal/channel_handlers/media_stats_channel_handler';
+import {ParticipantsChannelHandler} from './internal/channel_handlers/participants_channel_handler';
 import {SessionControlChannelHandler} from './internal/channel_handlers/session_control_channel_handler';
 import {VideoAssignmentChannelHandler} from './internal/channel_handlers/video_assignment_channel_handler';
 import {
@@ -28,6 +29,7 @@ import {
   InternalMediaEntry,
   InternalMediaLayout,
   InternalMeetStreamTrack,
+  InternalParticipant,
 } from './internal/internal_types';
 import {MeetStreamTrackImpl} from './internal/meet_stream_track_impl';
 import {
@@ -95,6 +97,8 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
 
   private mediaEntriesChannel: RTCDataChannel | undefined;
   private mediaStatsChannel: RTCDataChannel | undefined;
+  private participantsChannel: RTCDataChannel | undefined;
+
   /* tslint:disable:no-unused-variable */
   // This is unused because it is receive only.
   // @ts-ignore
@@ -102,6 +106,9 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
 
   // @ts-ignore
   private mediaStatsChannelHandler: MediaStatsChannelHandler | undefined;
+
+  // @ts-ignore
+  private participantsChannelHandler: ParticipantsChannelHandler | undefined;
   /* tslint:enable:no-unused-variable */
 
   private mediaLayoutId = 1;
@@ -130,6 +137,13 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   private readonly internalMeetStreamTrackMap = new Map<
     MeetStreamTrack,
     InternalMeetStreamTrack
+  >();
+
+  private readonly idParticipantMap = new Map<number, Participant>();
+  private readonly nameParticipantMap = new Map<string, Participant>();
+  private readonly internalParticipantMap = new Map<
+    Participant,
+    InternalParticipant
   >();
 
   constructor(
@@ -212,6 +226,10 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     // Create audio transceivers based on initial config.
     if (this.requiredConfiguration.enableAudioStreams) {
       for (let i = 0; i < NUMBER_OF_AUDIO_VIRTUAL_SSRC; i++) {
+        // Integrating clients must support and negotiate the OPUS codec in
+        // the SDP offer.
+        // This is the default for WebRTC.
+        // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/WebRTC_codecs.
         this.peerConnection.addTransceiver('audio', {direction: 'recvonly'});
       }
     }
@@ -225,7 +243,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     if (this.requiredConfiguration?.logsCallback) {
       sessionControlchannelLogger = new ChannelLogger(
         'session-control',
-        this.requiredConfiguration?.logsCallback,
+        this.requiredConfiguration.logsCallback,
       );
     }
     this.sessionControlChannelHandler = new SessionControlChannelHandler(
@@ -240,7 +258,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     if (this.requiredConfiguration?.logsCallback) {
       mediaStatsChannelLogger = new ChannelLogger(
         'media-stats',
-        this.requiredConfiguration?.logsCallback,
+        this.requiredConfiguration.logsCallback,
       );
     }
     this.mediaStatsChannelHandler = new MediaStatsChannelHandler(
@@ -259,7 +277,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       if (this.requiredConfiguration?.logsCallback) {
         videoAssignmentChannelLogger = new ChannelLogger(
           'video-assignment',
-          this.requiredConfiguration?.logsCallback,
+          this.requiredConfiguration.logsCallback,
         );
       }
       this.videoAssignmentChannelHandler = new VideoAssignmentChannelHandler(
@@ -283,7 +301,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       if (this.requiredConfiguration?.logsCallback) {
         mediaEntriesChannelLogger = new ChannelLogger(
           'media-entries',
-          this.requiredConfiguration?.logsCallback,
+          this.requiredConfiguration.logsCallback,
         );
       }
       this.mediaEntriesChannelHandler = new MediaEntriesChannelHandler(
@@ -293,7 +311,31 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
         this.internalMediaEntryMap,
         this.internalMeetStreamTrackMap,
         this.internalMediaLayoutMap,
+        this.participantsDelegate,
+        this.nameParticipantMap,
+        this.idParticipantMap,
+        this.internalParticipantMap,
         mediaEntriesChannelLogger,
+      );
+
+      this.participantsChannel =
+        this.peerConnection.createDataChannel('participants');
+      let participantsChannelLogger;
+      if (this.requiredConfiguration?.logsCallback) {
+        participantsChannelLogger = new ChannelLogger(
+          'participants',
+          this.requiredConfiguration.logsCallback,
+        );
+      }
+
+      this.participantsChannelHandler = new ParticipantsChannelHandler(
+        this.participantsChannel,
+        this.participantsDelegate,
+        this.idParticipantMap,
+        this.nameParticipantMap,
+        this.internalParticipantMap,
+        this.internalMediaEntryMap,
+        participantsChannelLogger,
       );
     }
 
@@ -311,6 +353,10 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     await this.peerConnection.setLocalDescription(pcOffer);
 
     for (let i = 0; i < this.requiredConfiguration.numberOfVideoStreams; i++) {
+      // Integrating clients must support and negotiate AV1, VP9, and VP8 codecs
+      // in the SDP offer.
+      // The default for WebRTC is VP8.
+      // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/WebRTC_codecs.
       this.peerConnection.addTransceiver('video', {direction: 'recvonly'});
     }
 
@@ -323,7 +369,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
         new DefaultCommunicationProtocolImpl(this.requiredConfiguration);
       response = await protocol.connectActiveConference(pcOffer.sdp ?? '');
     } catch (e) {
-      // TODO: b/341361368 - Handle specific errors such as 403 not found,
+      // TODO: Handle specific errors such as 403 not found,
       // Meeting is a CSE, etc.
       throw e;
     }

@@ -24,19 +24,19 @@
 #include <utility>
 
 #include "absl/base/thread_annotations.h"
-#include "absl/log/log.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/functional/any_invocable.h"
+#include "absl/status/status.h"
 #include "absl/synchronization/mutex.h"
-#include "native/api/conference_resources.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "native/api/meet_media_sink_interface.h"
-#include "native/samples/resource_parsers.h"
 #include "webrtc/api/scoped_refptr.h"
 
 namespace media_api_impls {
 
 class VideoSink : public meet::MeetVideoSinkInterface {
  public:
-  VideoSink(std::string file_location)
+  explicit VideoSink(std::string file_location)
       : file_location_(std::move(file_location)) {};
   ~VideoSink() override = default;
 
@@ -54,7 +54,7 @@ class VideoSink : public meet::MeetVideoSinkInterface {
 
 class AudioSink : public meet::MeetAudioSinkInterface {
  public:
-  AudioSink(std::string file_location)
+  explicit AudioSink(std::string file_location)
       : file_location_(std::move(file_location)) {};
 
   ~AudioSink() override = default;
@@ -73,7 +73,8 @@ class AudioSink : public meet::MeetAudioSinkInterface {
 
 class SinkFactory : public meet::MeetMediaSinkFactoryInterface {
  public:
-  SinkFactory(std::string file_location) : file_location_(file_location) {};
+  explicit SinkFactory(std::string file_location)
+      : file_location_(std::move(file_location)) {};
   ~SinkFactory() override = default;
   rtc::scoped_refptr<meet::MeetVideoSinkInterface> CreateVideoSink() override;
   rtc::scoped_refptr<meet::MeetAudioSinkInterface> CreateAudioSink() override;
@@ -84,38 +85,29 @@ class SinkFactory : public meet::MeetMediaSinkFactoryInterface {
 
 class SessionObserver : public meet::MeetMediaApiSessionObserverInterface {
  public:
+  // Callback for a specific request id that returns the response status for the
+  // request.
+  using ResourceResponseCallback =
+      absl::AnyInvocable<void(int64_t request_id, absl::Status status)>;
+
   SessionObserver() = default;
   ~SessionObserver() override = default;
-  void OnResourceUpdate(meet::ResourceUpdate update) override {
-    switch (update.hint) {
-      case meet::ResourceHint::kMediaEntries:
-        LOG(INFO) << "Received media entries update: "
-                  << MediaEntriesStringify(update.media_entries_update.value());
-        break;
-      case meet::ResourceHint::kSessionControl:
-        LOG(INFO) << "Received session control update: "
-                  << SessionControlStringify(
-                         update.session_control_update.value());
-        LOG(INFO) << "Received session control update: "
-                  << SessionControlStringify(
-                         update.session_control_update.value());
-        break;
+  void OnResourceUpdate(ResourceUpdate update) override;
+  void OnResourceRequestFailure(ResourceRequestError error) override;
 
-      case meet::ResourceHint::kVideoAssignment:
-        LOG(INFO) << "Received video assignment update: "
-                  << VideoAssignmentStringify(
-                         update.video_assignment_update.value());
-        break;
-      default:
-        LOG(INFO) << "Received unknown resource update: ";
-        break;
-    }
-  }
-  void OnResourceRequestFailure(
-      meet::MeetMediaApiSessionObserverInterface::ResourceRequestError error)
-      override {
-    LOG(INFO) << "OnResourceRequestFailure: " << error.status;
-  }
+  // Sets a callback for a specific request id.
+  //
+  // Only one callback can be set at a time for a request id. Setting a new
+  // callback will overwrite the existing callback if one exists.
+  //
+  // Callbacks are removed after being called.
+  void SetResourceResponseCallback(int64_t request_id,
+                                   ResourceResponseCallback callback);
+
+ private:
+  mutable absl::Mutex response_callback_map_mutex_;
+  absl::flat_hash_map<int64_t, ResourceResponseCallback> response_callbacks_
+      ABSL_GUARDED_BY(response_callback_map_mutex_);
 };
 
 }  // namespace media_api_impls

@@ -33,9 +33,13 @@
 #include "absl/synchronization/notification.h"
 #include "absl/time/time.h"
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
+#include "native/api/media_entries_resource.h"
 #include "native/api/meet_media_api_client_interface.h"
+#include "native/api/participants_resource.h"
+#include "native/api/session_control_resource.h"
+#include "native/api/video_assignment_resource.h"
 #include "native/internal/media_entries_resource_handler.h"
+#include "native/internal/participants_resource_handler.h"
 #include "native/internal/resource_handler_interface.h"
 #include "native/internal/session_control_resource_handler.h"
 #include "native/internal/testing/mock_meet_media_api_session_observer.h"
@@ -158,14 +162,14 @@ TEST(ConferenceResourceDataChannelTest,
 
   absl::Notification handler_done;
   EXPECT_CALL(*api_observer, OnResourceUpdate)
-      .WillOnce([&](ResourceUpdate update) {
-        EXPECT_EQ(update.hint, ResourceHint::kVideoAssignment);
-        EXPECT_TRUE(update.video_assignment_update.has_value());
-        handler_done.Notify();
-      });
+      .WillOnce(
+          [&](MeetMediaApiSessionObserverInterface::ResourceUpdate update) {
+            EXPECT_EQ(update.hint, ResourceHint::kVideoAssignment);
+            EXPECT_TRUE(update.video_assignment_update.has_value());
+            handler_done.Notify();
+          });
 
-  std::unique_ptr<VideoAssignmentResourceHandler> resource_handler =
-      std::make_unique<VideoAssignmentResourceHandler>();
+  auto resource_handler = std::make_unique<VideoAssignmentResourceHandler>();
   auto peer_connection =
       rtc::make_ref_counted<webrtc::MockPeerConnectionInterface>();
 
@@ -211,14 +215,14 @@ TEST(ConferenceResourceDataChannelTest,
 
   absl::Notification handler_done;
   EXPECT_CALL(*api_observer, OnResourceUpdate)
-      .WillOnce([&](ResourceUpdate update) {
-        EXPECT_EQ(update.hint, ResourceHint::kSessionControl);
-        EXPECT_TRUE(update.session_control_update.has_value());
-        handler_done.Notify();
-      });
+      .WillOnce(
+          [&](MeetMediaApiSessionObserverInterface::ResourceUpdate update) {
+            EXPECT_EQ(update.hint, ResourceHint::kSessionControl);
+            EXPECT_TRUE(update.session_control_update.has_value());
+            handler_done.Notify();
+          });
 
-  std::unique_ptr<SessionControlResourceHandler> resource_handler =
-      std::make_unique<SessionControlResourceHandler>();
+  auto resource_handler = std::make_unique<SessionControlResourceHandler>();
   auto peer_connection =
       rtc::make_ref_counted<webrtc::MockPeerConnectionInterface>();
 
@@ -260,14 +264,14 @@ TEST(ConferenceResourceDataChannelTest,
 
   absl::Notification handler_done;
   EXPECT_CALL(*api_observer, OnResourceUpdate)
-      .WillOnce([&](ResourceUpdate update) {
-        EXPECT_EQ(update.hint, ResourceHint::kMediaEntries);
-        EXPECT_TRUE(update.media_entries_update.has_value());
-        handler_done.Notify();
-      });
+      .WillOnce(
+          [&](MeetMediaApiSessionObserverInterface::ResourceUpdate update) {
+            EXPECT_EQ(update.hint, ResourceHint::kMediaEntries);
+            EXPECT_TRUE(update.media_entries_update.has_value());
+            handler_done.Notify();
+          });
 
-  std::unique_ptr<MediaEntriesResourceHandler> resource_handler =
-      std::make_unique<MediaEntriesResourceHandler>();
+  auto resource_handler = std::make_unique<MediaEntriesResourceHandler>();
   auto peer_connection =
       rtc::make_ref_counted<webrtc::MockPeerConnectionInterface>();
 
@@ -300,6 +304,63 @@ TEST(ConferenceResourceDataChannelTest,
           }
         ]
     })json"));
+
+  EXPECT_TRUE(handler_done.WaitForNotificationWithTimeout(absl::Seconds(5)));
+}
+
+TEST(ConferenceResourceDataChannelTest,
+     OnMessageNotifiesApiObserverWithParticipantsUpdate) {
+  std::unique_ptr<rtc::Thread> worker_thread = rtc::Thread::Create();
+  worker_thread->Start();
+  rtc::scoped_refptr<MockMeetMediaApiSessionObserver> api_observer =
+      MockMeetMediaApiSessionObserver::Create();
+
+  absl::Notification handler_done;
+  EXPECT_CALL(*api_observer, OnResourceUpdate)
+      .WillOnce(
+          [&](MeetMediaApiSessionObserverInterface::ResourceUpdate update) {
+            EXPECT_EQ(update.hint, ResourceHint::kParticipants);
+            EXPECT_TRUE(update.participants_update.has_value());
+            handler_done.Notify();
+          });
+
+  auto resource_handler = std::make_unique<ParticipantsResourceHandler>();
+  auto peer_connection =
+      rtc::make_ref_counted<webrtc::MockPeerConnectionInterface>();
+
+  EXPECT_CALL(*peer_connection, CreateDataChannelOrError)
+      .WillOnce([](const std::string& label,
+                   const webrtc::DataChannelInit* config) {
+        return static_cast<rtc::scoped_refptr<webrtc::DataChannelInterface>>(
+            webrtc::MockDataChannelInterface::Create());
+      });
+
+  absl::StatusOr<std::unique_ptr<ConferenceResourceDataChannel<
+      ParticipantsChannelToClient, NoResourceRequestsFromClient>>>
+      create_status = ConferenceResourceDataChannel<
+          ParticipantsChannelToClient,
+          NoResourceRequestsFromClient>::Create(std::move(api_observer),
+                                                peer_connection, "participants",
+                                                std::move(resource_handler),
+                                                worker_thread.get());
+  ASSERT_OK(create_status);
+
+  std::unique_ptr<ConferenceResourceDataChannel<ParticipantsChannelToClient,
+                                                NoResourceRequestsFromClient>>
+      data_channel = *std::move(create_status);
+
+  data_channel->OnMessage(webrtc::DataBuffer(R"json({
+    "resources": [{
+      "id": 3,
+        "participant": {
+          "participantId": 7,
+          "name": "some-participant-name",
+          "anonymousUser": {
+            "displayName": "some-display-name"
+          }
+        }
+    }]
+  })json"));
 
   EXPECT_TRUE(handler_done.WaitForNotificationWithTimeout(absl::Seconds(5)));
 }

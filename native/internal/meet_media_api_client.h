@@ -25,15 +25,17 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "native/api/conference_resources.h"
+#include "native/api/media_entries_resource.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "native/api/meet_media_sink_interface.h"
+#include "native/api/participants_resource.h"
+#include "native/api/session_control_resource.h"
+#include "native/api/video_assignment_resource.h"
 #include "native/internal/conference_resource_data_channel.h"
 #include "native/internal/curl_request.h"
 #include "native/internal/meet_media_streams.h"
 #include "native/internal/meet_session_observers.h"
 #include "native/internal/resource_handler_interface.h"
-#include "webrtc/api/jsep.h"
 #include "webrtc/api/peer_connection_interface.h"
 #include "webrtc/api/scoped_refptr.h"
 
@@ -43,6 +45,7 @@ struct InternalConfigurations {
   uint32_t receiving_video_stream_count = 0;
   bool enable_audio_streams = false;
   bool enable_media_entries_resource = false;
+  bool enable_participants_resource = false;
   bool enable_video_assignment_resource = false;
   // Session control data channel is always required to be signaled by the
   // client with Meet servers. Hence the option is not exposed in the public
@@ -81,9 +84,27 @@ CreateMeetMediaApiClient(InternalConfigurations configurations);
 
 class MeetMediaApiClient : public MeetMediaApiClientInterface {
  public:
+  // MeetMediaApiClient is neither copyable nor movable.
+  MeetMediaApiClient(const MeetMediaApiClient&) = delete;
+  MeetMediaApiClient& operator=(const MeetMediaApiClient&) = delete;
+
+  absl::Status ConnectActiveConference(absl::string_view join_endpoint,
+                                       absl::string_view conference_id,
+                                       absl::string_view access_token) override;
+
+  absl::Status LeaveConference(int64_t request_id) override;
+
+  absl::Status SendRequest(const ResourceRequest& request) override;
+
+  absl::StatusOr<std::string> GetLocalDescription() const override;
+
+ private:
   // Just convenience aliases for specific conference resource data channels.
   using MediaEntriesDataChannel =
       ConferenceResourceDataChannel<MediaEntriesChannelToClient,
+                                    NoResourceRequestsFromClient>;
+  using ParticipantsDataChannel =
+      ConferenceResourceDataChannel<ParticipantsChannelToClient,
                                     NoResourceRequestsFromClient>;
   using VideoAssignmentDataChannel =
       ConferenceResourceDataChannel<VideoAssignmentChannelToClient,
@@ -99,24 +120,11 @@ class MeetMediaApiClient : public MeetMediaApiClientInterface {
   // owned by the created MeetMediaApiClient instance.
   struct MediaApiSessionDataChannels {
     std::unique_ptr<MediaEntriesDataChannel> media_entries;
+    std::unique_ptr<ParticipantsDataChannel> participants;
     std::unique_ptr<VideoAssignmentDataChannel> video_assignment;
     std::unique_ptr<SessionControlDataChannel> session_control;
   };
 
-  // MeetMediaApiClient is neither copyable nor movable.
-  MeetMediaApiClient(const MeetMediaApiClient&) = delete;
-  MeetMediaApiClient& operator=(const MeetMediaApiClient&) = delete;
-
-  absl::Status ConnectActiveConference(absl::string_view join_endpoint,
-                                       absl::string_view conference_id,
-                                       absl::string_view access_token) override;
-
-  // Queues up a resource request on the signaling thread.
-  absl::Status SendRequest(const ResourceRequest& request) override;
-
-  absl::StatusOr<std::string> GetLocalDescription() const override;
-
- private:
   explicit MeetMediaApiClient(
       std::unique_ptr<rtc::Thread> signaling_thread,
       std::unique_ptr<rtc::Thread> worker_thread,
@@ -133,6 +141,7 @@ class MeetMediaApiClient : public MeetMediaApiClientInterface {
         media_stream_manager_(std::move(media_stream_manager)),
         observer_(std::move(observer)),
         media_entries_data_channel_(std::move(data_channels.media_entries)),
+        participants_data_channel_(std::move(data_channels.participants)),
         video_assignment_data_channel_(
             std::move(data_channels.video_assignment)),
         session_control_data_channel_(std::move(data_channels.session_control)),
@@ -159,6 +168,7 @@ class MeetMediaApiClient : public MeetMediaApiClientInterface {
   std::unique_ptr<MeetMediaStreamManager> media_stream_manager_;
   std::unique_ptr<MeetPeerConnectionObserver> observer_;
   std::unique_ptr<MediaEntriesDataChannel> media_entries_data_channel_;
+  std::unique_ptr<ParticipantsDataChannel> participants_data_channel_;
   std::unique_ptr<VideoAssignmentDataChannel> video_assignment_data_channel_;
   std::unique_ptr<SessionControlDataChannel> session_control_data_channel_;
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;

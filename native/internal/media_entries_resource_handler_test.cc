@@ -21,7 +21,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/types/optional.h"
-#include "native/api/conference_resources.h"
+#include "native/api/media_entries_resource.h"
 
 namespace meet {
 namespace {
@@ -36,7 +36,8 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
           {
             "id": 424242,
             "mediaEntry": {
-              "participantId": 123,
+              "participant": "some-participant-name",
+              "session": "some-session-name",
               "audioCsrc": 111,
               "videoCsrcs": [
                 123,
@@ -51,7 +52,8 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
           {
             "id": 242424,
             "mediaEntry": {
-              "participantId": 456,
+              "participant": "another-participant-name",
+              "session": "another-session-name",
               "audioCsrc": 222,
               "videoCsrcs": [
                 555,
@@ -69,7 +71,8 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
   ASSERT_TRUE(parsed_update.resources[0].media_entry.has_value());
   MediaEntry media_entry1 = *parsed_update.resources[0].media_entry;
 
-  EXPECT_EQ(media_entry1.participant_id, 123);
+  EXPECT_EQ(media_entry1.participant_name, "some-participant-name");
+  EXPECT_EQ(media_entry1.session_name, "some-session-name");
   EXPECT_EQ(media_entry1.audio_csrc, 111);
   EXPECT_THAT(media_entry1.video_csrcs, ElementsAre(123, 456));
   EXPECT_TRUE(media_entry1.presenter);
@@ -80,7 +83,8 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
   ASSERT_TRUE(parsed_update.resources[1].media_entry.has_value());
   MediaEntry media_entry2 = parsed_update.resources[1].media_entry.value();
 
-  EXPECT_EQ(media_entry2.participant_id, 456);
+  EXPECT_EQ(media_entry2.participant_name, "another-participant-name");
+  EXPECT_EQ(media_entry2.session_name, "another-session-name");
   EXPECT_EQ(media_entry2.audio_csrc, 222);
   EXPECT_THAT(media_entry2.video_csrcs, ElementsAre(555, 666));
   EXPECT_FALSE(media_entry2.presenter);
@@ -115,7 +119,8 @@ TEST(MediaEntriesResourceHandlerTest, ResourceSnapshotIdIsZeroIfMissing) {
         "resources": [
           {
             "mediaEntry": {
-              "participantId": 123,
+              "participant": "some-participant-name",
+              "session": "some-session-name",
               "audioCsrc": 111,
               "videoCsrcs": [
                 123,

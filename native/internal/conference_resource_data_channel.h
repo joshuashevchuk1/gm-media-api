@@ -25,7 +25,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "native/api/conference_resources.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "native/internal/resource_handler_interface.h"
 #include "webrtc/api/data_channel_interface.h"
@@ -171,7 +170,8 @@ class ConferenceResourceDataChannel : public webrtc::DataChannelObserver {
     data_channel_->RegisterObserver(this);
   };
 
-  absl::StatusOr<ResourceUpdate> CreateResourceUpdate(ToClientUpdate update);
+  absl::StatusOr<MeetMediaApiSessionObserverInterface::ResourceUpdate>
+  CreateResourceUpdate(ToClientUpdate update);
   int64_t ExtractRequestId(const FromClientRequest& request);
 
   rtc::scoped_refptr<MeetMediaApiSessionObserverInterface>
@@ -192,6 +192,8 @@ class ConferenceResourceDataChannel : public webrtc::DataChannelObserver {
 // Explicit instantiations in conference_resource_data_channel.cc file
 extern template class ConferenceResourceDataChannel<
     MediaEntriesChannelToClient, NoResourceRequestsFromClient>;
+extern template class ConferenceResourceDataChannel<
+    ParticipantsChannelToClient, NoResourceRequestsFromClient>;
 extern template class ConferenceResourceDataChannel<
     VideoAssignmentChannelToClient, VideoAssignmentChannelFromClient>;
 extern template class ConferenceResourceDataChannel<

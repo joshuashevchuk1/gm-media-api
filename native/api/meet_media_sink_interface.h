@@ -46,7 +46,7 @@
 //       ^                                        ^
 //       |                                        |
 //  ┌         ┐         ┌         ┐         ┌         ┐         ┌         ┐
-//  |  John   |         |  Jack   |         |   Jim   |         |  jose   |
+//  |  John   |         |  Jack   |         |   Jim   |         |  Jose   |
 //  └         ┘         └         ┘         └         ┘         └         ┘
 //    csrc: 1             csrc: 2             csrc: 3             csrc: 4
 //
@@ -78,7 +78,7 @@
 //       ^                   ^
 //       |                   |
 //  ┌         ┐         ┌         ┐         ┌         ┐         ┌         ┐
-//  |  John   |         |  Jack   |         |   Jim   |         |  jose   |
+//  |  John   |         |  Jack   |         |   Jim   |         |  Jose   |
 //  └         ┘         └         ┘         └         ┘         └         ┘
 //    csrc: 1             csrc: 2             csrc: 3             csrc: 4
 //

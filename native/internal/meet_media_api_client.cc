@@ -32,7 +32,6 @@
 #include "absl/time/time.h"
 #include "url/gurl.h"
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "native/api/meet_media_sink_interface.h"
 #include "native/internal/conference_resource_data_channel.h"
@@ -42,6 +41,7 @@
 #include "native/internal/meet_media_api_audio_device_module.h"
 #include "native/internal/meet_media_streams.h"
 #include "native/internal/meet_session_observers.h"
+#include "native/internal/participants_resource_handler.h"
 #include "native/internal/session_control_resource_handler.h"
 #include "native/internal/video_assignment_resource_handler.h"
 #include "webrtc/api/audio_codecs/builtin_audio_encoder_factory.h"
@@ -66,6 +66,7 @@ namespace meet {
 namespace {
 constexpr absl::Duration kAsyncWorkWaitTime = absl::Seconds(3);
 constexpr absl::string_view kMediaEntriesDataChannelLabel = "media-entries";
+constexpr absl::string_view kParticipantsDataChannelLabel = "participants";
 constexpr absl::string_view kVideoAssignmentDataChannelLabel =
     "video-assignment";
 constexpr absl::string_view kSessionControlDataChannelLabel = "session-control";
@@ -155,13 +156,13 @@ MeetMediaApiClientInterface::Create(
               webrtc::Dav1dDecoderTemplateAdapter>>(),
           /*audio_mixer=*/nullptr, /*audio_processing=*/nullptr);
 
-  std::unique_ptr<CurlRequestFactory> curl_request_factory =
-      std::make_unique<CurlRequestFactory>();
+  auto curl_request_factory = std::make_unique<CurlRequestFactory>();
 
   InternalConfigurations configurations = {
       .receiving_video_stream_count = api_config.receiving_video_stream_count,
       .enable_audio_streams = api_config.enable_audio_streams,
       .enable_media_entries_resource = api_config.enable_media_entries_resource,
+      .enable_participants_resource = api_config.enable_participants_resource,
       .enable_video_assignment_resource =
           api_config.enable_video_assignment_resource,
       .enable_session_control_data_channel = true,
@@ -178,6 +179,9 @@ MeetMediaApiClientInterface::Create(
 }
 
 absl::Status MeetMediaApiClient::SendRequest(const ResourceRequest& request) {
+  // TODO: Check if the client is in the correct state to send
+  // requests and return an error if not.
+
   switch (request.hint) {
     case ResourceHint::kSessionControl:
       if (session_control_data_channel_ == nullptr) {
@@ -269,7 +273,7 @@ absl::Status MeetMediaApiClient::Connect(absl::string_view full_join_endpoint,
   }
 
   MeetConnectResponse connect_response = *std::move(response_parse_status);
-  if (connect_response.status != absl::OkStatus()) {
+  if (!connect_response.status.ok()) {
     return connect_response.status;
   }
 
@@ -301,6 +305,14 @@ absl::Status MeetMediaApiClient::SetRemoteDescription(std::string answer) {
   // Final results of setting the remote description will be notified via the
   // callbacks in `MeetPeerConnectionObserver`. There's nothing more to do here.
   return absl::OkStatus();
+}
+
+absl::Status MeetMediaApiClient::LeaveConference(int64_t request_id) {
+  return SendRequest(ResourceRequest{
+      .hint = ResourceHint::kSessionControl,
+      .session_control_request = SessionControlChannelFromClient{
+          .request = SessionControlRequest{.request_id = request_id,
+                                           .leave_request = LeaveRequest()}}});
 }
 
 absl::StatusOr<std::string> MeetMediaApiClient::GetLocalDescription() const {
@@ -336,7 +348,7 @@ CreateMeetMediaApiClient(InternalConfigurations configurations) {
 
   // This callback will be invoked by `MeetPeerConnectionObserver` whenever
   // a new remote track is added. The `MeetMediaStreamManager` will then handle
-  // the track appropriately. Because of the depency graph, the owning object
+  // the track appropriately. Because of the dependency graph, the owning object
   // must ensure that `MeetMediaStreamManager` must outlive the
   // `MeetPeerConnectionObserver`.
   auto remote_track_added_callback =
@@ -389,6 +401,21 @@ CreateMeetMediaApiClient(InternalConfigurations configurations) {
     }
   }
 
+  for (uint32_t i = 0; i < configurations.receiving_video_stream_count; ++i) {
+    webrtc::RtpTransceiverInit video_init;
+    video_init.direction = webrtc::RtpTransceiverDirection::kRecvOnly;
+    video_init.stream_ids = {absl::StrCat("video_stream_", i)};
+
+    webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>>
+        video_result = peer_connection->AddTransceiver(
+            cricket::MediaType::MEDIA_TYPE_VIDEO, video_init);
+
+    if (!video_result.ok()) {
+      return absl::InternalError(absl::StrCat(
+          "Failed to add video transceiver: ", video_result.error().message()));
+    }
+  }
+
   std::unique_ptr<MeetMediaApiClient::MediaEntriesDataChannel>
       media_entries_channel;
   if (configurations.enable_media_entries_resource) {
@@ -404,6 +431,21 @@ CreateMeetMediaApiClient(InternalConfigurations configurations) {
       return media_entries_create_status.status();
     }
     media_entries_channel = *std::move(media_entries_create_status);
+  }
+
+  std::unique_ptr<MeetMediaApiClient::ParticipantsDataChannel>
+      participants_channel;
+  if (configurations.enable_participants_resource) {
+    auto participants_create_status =
+        MeetMediaApiClient::ParticipantsDataChannel::Create(
+            configurations.api_session_observer, peer_connection,
+            kParticipantsDataChannelLabel,
+            std::make_unique<ParticipantsResourceHandler>(),
+            configurations.worker_thread.get());
+    if (!participants_create_status.ok()) {
+      return participants_create_status.status();
+    }
+    participants_channel = *std::move(participants_create_status);
   }
 
   std::unique_ptr<MeetMediaApiClient::VideoAssignmentDataChannel>
@@ -440,11 +482,6 @@ CreateMeetMediaApiClient(InternalConfigurations configurations) {
 
   auto set_local_description_observer =
       webrtc::make_ref_counted<SetLocalDescriptionObserver>();
-
-  // We need to ensure the ordering of the media descriptions is always
-  // audio -> data channels -> video. Apply local description now to lock in
-  // audio and data channel descriptions before applying video descriptions.
-  // This is only needed until the mid ordering is fixed in the backend.
   configurations.signaling_thread->PostTask(
       [peer_connection, set_local_description_observer]() {
         peer_connection->SetLocalDescription(set_local_description_observer);
@@ -456,39 +493,11 @@ CreateMeetMediaApiClient(InternalConfigurations configurations) {
     return wait_status;
   }
 
-  for (uint32_t i = 0; i < configurations.receiving_video_stream_count; ++i) {
-    webrtc::RtpTransceiverInit video_init;
-    video_init.direction = webrtc::RtpTransceiverDirection::kRecvOnly;
-    video_init.stream_ids = {absl::StrCat("video_stream_", i)};
-
-    webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>>
-        video_result = peer_connection->AddTransceiver(
-            cricket::MediaType::MEDIA_TYPE_VIDEO, video_init);
-
-    if (!video_result.ok()) {
-      return absl::InternalError(absl::StrCat(
-          "Failed to add video transceiver: ", video_result.error().message()));
-    }
-  }
-
-  auto final_set_local_description_observer =
-      webrtc::make_ref_counted<SetLocalDescriptionObserver>();
-  configurations.signaling_thread->PostTask(
-      [peer_connection, final_set_local_description_observer]() {
-        peer_connection->SetLocalDescription(
-            final_set_local_description_observer);
-      });
-
-  absl::Status final_wait_status =
-      final_set_local_description_observer->WaitWithTimeout(kAsyncWorkWaitTime);
-  if (!final_wait_status.ok()) {
-    return final_wait_status;
-  }
-
   // Fields will be in an undefined state after creating the MeetMediaApiClient.
   // The client will take ownership of the data channels.
   MeetMediaApiClient::MediaApiSessionDataChannels data_channels = {
       .media_entries = std::move(media_entries_channel),
+      .participants = std::move(participants_channel),
       .video_assignment = std::move(video_assignment_channel),
       .session_control = std::move(session_control_channel),
   };

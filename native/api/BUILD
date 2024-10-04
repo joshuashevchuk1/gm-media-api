@@ -17,7 +17,6 @@ package(default_visibility = ["//visibility:private"])
 cc_library(
     name = "meet_media_api_client_interface",
     hdrs = [
-        "conference_resources.h",
         "meet_media_api_client_interface.h",
     ],
     visibility = ["@media_api_samples//native:__subpackages__"],
@@ -26,7 +25,10 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
-        "@com_google_absl//absl/types:optional",
+        "@media_api_samples//native/api:media_entries_resource",
+        "@media_api_samples//native/api:participants_resource",
+        "@media_api_samples//native/api:session_control_resource",
+        "@media_api_samples//native/api:video_assignment_resource",
         "@webrtc",
     ],
 )
@@ -34,26 +36,58 @@ cc_library(
 cc_library(
     name = "meet_media_sink_interface",
     hdrs = [
-        "conference_resources.h",
         "meet_media_sink_interface.h",
     ],
     visibility = ["@media_api_samples//native:__subpackages__"],
     deps = [
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/types:span",
         "@webrtc",
     ],
 )
 
 cc_library(
-    name = "conference_resources",
+    name = "media_stats_resource",
     hdrs = [
-        "conference_resources.h",
+        "media_stats_resource.h",
     ],
     visibility = ["@media_api_samples//native:__subpackages__"],
     deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/types:optional",
     ],
+)
+
+cc_library(
+    name = "participants_resource",
+    hdrs = [
+        "participants_resource.h",
+    ],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+)
+
+cc_library(
+    name = "video_assignment_resource",
+    hdrs = [
+        "video_assignment_resource.h",
+    ],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+    deps = ["@com_google_absl//absl/status"],
+)
+
+cc_library(
+    name = "media_entries_resource",
+    hdrs = [
+        "media_entries_resource.h",
+    ],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+)
+
+cc_library(
+    name = "session_control_resource",
+    hdrs = [
+        "session_control_resource.h",
+    ],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+    deps = ["@com_google_absl//absl/status"],
 )

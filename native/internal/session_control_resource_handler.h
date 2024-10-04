@@ -21,7 +21,7 @@
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "native/api/conference_resources.h"
+#include "native/api/session_control_resource.h"
 #include "native/internal/resource_handler_interface.h"
 
 namespace meet {

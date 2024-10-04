@@ -414,8 +414,8 @@ cc_library(
         "@zlib",
     ] + select({
         "//conditions:default": [
+            "@boringssl//:crypto",
             "@boringssl//:ssl",
-            "@webrtc//:webrtc",
         ],
     }),
 )

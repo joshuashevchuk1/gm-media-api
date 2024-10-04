@@ -44,16 +44,10 @@ export interface MediaEntry {
 }
 
 /**
- * A representation of a participant in a media api client.
- * This maps to
- * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants#Participant.
+ * Base participant type.
  */
 export interface Participant {
-  // Resource name of the participant.
-  // Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
-  readonly name: string;
-  /** Additional metadata about the participant. */
-  readonly participantInfo: SignedInUser | AnonymousUser | PhoneUser;
+  participant: BaseParticipant;
   /**
    * The media entries associated with this participant. These can be
    * transient. There is one participant to many media entries relationship.
@@ -61,8 +55,59 @@ export interface Participant {
   readonly mediaEntries: Subscribable<MediaEntry[]>;
 }
 
-// A signed in user in a Meet call.
-interface SignedInUser {
+/**
+ * Base participant type.
+ */
+export interface BaseParticipant {
+  // Resource name of the participant.
+  // Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
+  readonly name: string;
+  signedInUser?: SignedInUser;
+  anonymousUser?: AnonymousUser;
+  phoneUser?: PhoneUser;
+}
+
+/**
+ * A signed in participant in a Meet call.
+ */
+export interface SignedInParticipant extends BaseParticipant {
+  signedInUser: SignedInUser;
+  anonymousUser?: never;
+  phoneUser?: never;
+}
+
+/**
+ * An anonymous participant in a Meet call.
+ */
+export interface AnonymousParticipant extends BaseParticipant {
+  signedInUser?: never;
+  anonymousUser: AnonymousUser;
+  phoneUser?: never;
+}
+
+/**
+ * A phone participant in a Meet call.
+ */
+export interface PhoneParticipant extends BaseParticipant {
+  signedInUser?: never;
+  anonymousUser?: never;
+  phoneUser: PhoneUser;
+}
+
+/**
+ * A representation of a participant for a Media API client.
+ * This maps to
+ * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants#Participant.
+ */
+export type ParticipantType =
+  | SignedInParticipant
+  | AnonymousParticipant
+  | PhoneParticipant;
+
+/**
+ * A signed in user in a Meet call.
+ */
+export interface SignedInUser {
   /**
    * Unique ID of the user which is interoperable with Admin SDK API and People
    * API.
@@ -75,16 +120,20 @@ interface SignedInUser {
   readonly displayName: string;
 }
 
-// An anonymous user in a Meet call.
-interface AnonymousUser {
+/**
+ * An anonymous user in a Meet call.
+ */
+export interface AnonymousUser {
   /** User specified display name. */
-  readonly displayName: string;
+  readonly displayName?: string;
 }
 
-// A dial-in user in a Meet call.
-interface PhoneUser {
+/**
+ * A dial-in user in a Meet call.
+ */
+export interface PhoneUser {
   /** Partially redacted user's phone number. */
-  readonly displayMame: string;
+  readonly displayName: string;
 }
 
 /**

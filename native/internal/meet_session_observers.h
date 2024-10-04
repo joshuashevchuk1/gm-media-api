@@ -39,7 +39,6 @@
 #include "native/api/meet_media_api_client_interface.h"
 #include "webrtc/api/data_channel_interface.h"
 #include "webrtc/api/jsep.h"
-#include "webrtc/api/media_stream_interface.h"
 #include "webrtc/api/peer_connection_interface.h"
 #include "webrtc/api/rtc_error.h"
 #include "webrtc/api/rtp_transceiver_interface.h"

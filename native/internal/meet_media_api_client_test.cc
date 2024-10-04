@@ -31,7 +31,6 @@
 #include "absl/strings/string_view.h"
 #include <curl/curl.h>
 #include "nlohmann/json.hpp"
-#include "native/api/conference_resources.h"
 #include "native/api/meet_media_api_client_interface.h"
 #include "native/internal/curl_request.h"
 #include "native/internal/testing/mock_curl_api_wrapper.h"
@@ -721,6 +720,124 @@ TEST(MeetMediaApiClientTest, ConnectActiveConferenceSucceeds) {
                                             "some_random_token"));
 }
 
+TEST(MeetMediaApiClientTest, LeaveConferenceSendsLeaveRequest) {
+  std::unique_ptr<rtc::Thread> signaling_thread = rtc::Thread::Create();
+  std::unique_ptr<rtc::Thread> worker_thread = rtc::Thread::Create();
+  signaling_thread->Start();
+  worker_thread->Start();
+
+  rtc::scoped_refptr<webrtc::MockDataChannelInterface>
+      mock_session_control_channel = webrtc::MockDataChannelInterface::Create();
+
+  EXPECT_CALL(*mock_session_control_channel, state)
+      .WillOnce(Return(webrtc::DataChannelInterface::kOpen));
+  EXPECT_CALL(*mock_session_control_channel, SendAsync)
+      .WillOnce([](webrtc::DataBuffer buffer,
+                   absl::AnyInvocable<void(webrtc::RTCError) &&> on_complete) {
+        absl::string_view message(buffer.data.cdata<char>(), buffer.size());
+        EXPECT_THAT(message, StrEq(Json::parse(R"json({
+                                                "request": {
+                                                  "requestId": 42,
+                                                  "leave": {}
+                                                }
+                                              })json")
+                                       .dump()));
+      });
+
+  rtc::scoped_refptr<MockPeerConnectionInterface> peer_connection =
+      rtc::make_ref_counted<MockPeerConnectionInterface>();
+  EXPECT_CALL(*peer_connection, CreateDataChannelOrError(_, _))
+      .WillOnce(InvokeWithoutArgs([&]() {
+        return static_cast<rtc::scoped_refptr<webrtc::DataChannelInterface>>(
+            mock_session_control_channel);
+      }));
+  ON_CALL(*peer_connection, SetLocalDescription(_))
+      .WillByDefault(
+          [](rtc::scoped_refptr<::webrtc::SetLocalDescriptionObserverInterface>
+                 observer) {
+            observer->OnSetLocalDescriptionComplete(webrtc::RTCError::OK());
+          });
+
+  rtc::scoped_refptr<webrtc::MockPeerConnectionFactoryInterface>
+      peer_connection_factory =
+          webrtc::MockPeerConnectionFactoryInterface::Create();
+  EXPECT_CALL(*peer_connection_factory, CreatePeerConnectionOrError)
+      .WillOnce(ReturnPeerConnection(peer_connection));
+
+  InternalConfigurations configurations = {
+      .receiving_video_stream_count = 0,
+      .enable_audio_streams = false,
+      .enable_media_entries_resource = false,
+      .enable_video_assignment_resource = false,
+      .enable_session_control_data_channel = true,
+      .enable_stats_data_channel = false,
+      .signaling_thread = std::move(signaling_thread),
+      .worker_thread = std::move(worker_thread),
+      .api_session_observer = MockMeetMediaApiSessionObserver::Create(),
+      .sink_factory = MockMeetMediaSinkFactory::Create(),
+      .peer_connection_factory = std::move(peer_connection_factory),
+      .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<MeetMediaApiClientInterface> client,
+                       CreateMeetMediaApiClient(std::move(configurations)));
+  EXPECT_OK(client->LeaveConference(/*request_id=*/42));
+}
+
+TEST(MeetMediaApiClientTest,
+     LeaveConferenceReturnsStatusWhenDataChannelIsNotOpen) {
+  std::unique_ptr<rtc::Thread> signaling_thread = rtc::Thread::Create();
+  std::unique_ptr<rtc::Thread> worker_thread = rtc::Thread::Create();
+  signaling_thread->Start();
+  worker_thread->Start();
+
+  rtc::scoped_refptr<webrtc::MockDataChannelInterface>
+      mock_session_control_channel = webrtc::MockDataChannelInterface::Create();
+
+  EXPECT_CALL(*mock_session_control_channel, state)
+      .WillOnce(Return(webrtc::DataChannelInterface::kClosed));
+  EXPECT_CALL(*mock_session_control_channel, SendAsync).Times(0);
+
+  rtc::scoped_refptr<MockPeerConnectionInterface> peer_connection =
+      rtc::make_ref_counted<MockPeerConnectionInterface>();
+  EXPECT_CALL(*peer_connection, CreateDataChannelOrError(_, _))
+      .WillOnce(InvokeWithoutArgs([&]() {
+        return static_cast<rtc::scoped_refptr<webrtc::DataChannelInterface>>(
+            mock_session_control_channel);
+      }));
+  ON_CALL(*peer_connection, SetLocalDescription(_))
+      .WillByDefault(
+          [](rtc::scoped_refptr<::webrtc::SetLocalDescriptionObserverInterface>
+                 observer) {
+            observer->OnSetLocalDescriptionComplete(webrtc::RTCError::OK());
+          });
+
+  rtc::scoped_refptr<webrtc::MockPeerConnectionFactoryInterface>
+      peer_connection_factory =
+          webrtc::MockPeerConnectionFactoryInterface::Create();
+  EXPECT_CALL(*peer_connection_factory, CreatePeerConnectionOrError)
+      .WillOnce(ReturnPeerConnection(peer_connection));
+
+  InternalConfigurations configurations = {
+      .receiving_video_stream_count = 0,
+      .enable_audio_streams = false,
+      .enable_media_entries_resource = false,
+      .enable_video_assignment_resource = false,
+      .enable_session_control_data_channel = true,
+      .enable_stats_data_channel = false,
+      .signaling_thread = std::move(signaling_thread),
+      .worker_thread = std::move(worker_thread),
+      .api_session_observer = MockMeetMediaApiSessionObserver::Create(),
+      .sink_factory = MockMeetMediaSinkFactory::Create(),
+      .peer_connection_factory = std::move(peer_connection_factory),
+      .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<MeetMediaApiClientInterface> client,
+                       CreateMeetMediaApiClient(std::move(configurations)));
+  EXPECT_THAT(client->LeaveConference(/*request_id=*/42),
+              StatusIs(absl::StatusCode::kFailedPrecondition,
+                       HasSubstr("is not open.")));
+}
+
 TEST(MeetMediaApiClientTest,
      CreateMediaApiClientFailsIfCreatingPeerConnectionFails) {
   std::unique_ptr<rtc::Thread> signaling_thread = rtc::Thread::Create();
@@ -794,12 +911,9 @@ TEST(MeetMediaApiClientTest, CreateMediaApiClientFailsIfAddingVideoFails) {
 
   rtc::scoped_refptr<MockPeerConnectionInterface> peer_connection =
       rtc::make_ref_counted<MockPeerConnectionInterface>();
-  EXPECT_CALL(*peer_connection, SetLocalDescription(_))
-      .WillOnce(
-          [](rtc::scoped_refptr<::webrtc::SetLocalDescriptionObserverInterface>
-                 observer) {
-            observer->OnSetLocalDescriptionComplete(webrtc::RTCError::OK());
-          });
+  EXPECT_CALL(*peer_connection,
+              AddTransceiver(cricket::MediaType::MEDIA_TYPE_VIDEO, _))
+      .WillOnce(Return(webrtc::RTCError(webrtc::RTCErrorType::INTERNAL_ERROR)));
 
   rtc::scoped_refptr<webrtc::MockPeerConnectionFactoryInterface>
       peer_connection_factory =
@@ -822,6 +936,43 @@ TEST(MeetMediaApiClientTest, CreateMediaApiClientFailsIfAddingVideoFails) {
   EXPECT_THAT(CreateMeetMediaApiClient(std::move(configurations)),
               StatusIs(absl::StatusCode::kInternal,
                        HasSubstr("Failed to add video transceiver")));
+}
+
+TEST(MeetMediaApiClientTest,
+     CreateMediaApiClientFailsIfCreatingParticipantsDataChannelFails) {
+  std::unique_ptr<rtc::Thread> signaling_thread = rtc::Thread::Create();
+  std::unique_ptr<rtc::Thread> worker_thread = rtc::Thread::Create();
+  signaling_thread->Start();
+  worker_thread->Start();
+
+  rtc::scoped_refptr<MockPeerConnectionInterface> peer_connection =
+      rtc::make_ref_counted<MockPeerConnectionInterface>();
+  EXPECT_CALL(*peer_connection, CreateDataChannelOrError(_, _))
+      .WillOnce(Return(webrtc::RTCError(webrtc::RTCErrorType::INTERNAL_ERROR)));
+
+  rtc::scoped_refptr<webrtc::MockPeerConnectionFactoryInterface>
+      peer_connection_factory =
+          webrtc::MockPeerConnectionFactoryInterface::Create();
+  EXPECT_CALL(*peer_connection_factory, CreatePeerConnectionOrError)
+      .WillOnce(ReturnPeerConnection(peer_connection));
+
+  InternalConfigurations configurations = {
+      .receiving_video_stream_count = 0,
+      .enable_audio_streams = false,
+      .enable_participants_resource = true,
+      .enable_session_control_data_channel = false,
+      .enable_stats_data_channel = false,
+      .signaling_thread = std::move(signaling_thread),
+      .worker_thread = std::move(worker_thread),
+      .api_session_observer = MockMeetMediaApiSessionObserver::Create(),
+      .sink_factory = MockMeetMediaSinkFactory::Create(),
+      .peer_connection_factory = std::move(peer_connection_factory),
+      .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
+
+  EXPECT_THAT(
+      CreateMeetMediaApiClient(std::move(configurations)),
+      StatusIs(absl::StatusCode::kInternal,
+               HasSubstr("Failed to create data channel participants")));
 }
 
 TEST(MeetMediaApiClientTest,
@@ -855,9 +1006,10 @@ TEST(MeetMediaApiClientTest,
       .peer_connection_factory = std::move(peer_connection_factory),
       .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
 
-  EXPECT_THAT(CreateMeetMediaApiClient(std::move(configurations)),
-              StatusIs(absl::StatusCode::kInternal,
-                       HasSubstr("Failed to create data channel")));
+  EXPECT_THAT(
+      CreateMeetMediaApiClient(std::move(configurations)),
+      StatusIs(absl::StatusCode::kInternal,
+               HasSubstr("Failed to create data channel video-assignment")));
 }
 
 TEST(MeetMediaApiClientTest,
@@ -891,9 +1043,10 @@ TEST(MeetMediaApiClientTest,
       .peer_connection_factory = std::move(peer_connection_factory),
       .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
 
-  EXPECT_THAT(CreateMeetMediaApiClient(std::move(configurations)),
-              StatusIs(absl::StatusCode::kInternal,
-                       HasSubstr("Failed to create data channel")));
+  EXPECT_THAT(
+      CreateMeetMediaApiClient(std::move(configurations)),
+      StatusIs(absl::StatusCode::kInternal,
+               HasSubstr("Failed to create data channel media-entries")));
 }
 
 TEST(MeetMediaApiClientTest,
@@ -926,9 +1079,10 @@ TEST(MeetMediaApiClientTest,
       .peer_connection_factory = std::move(peer_connection_factory),
       .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
 
-  EXPECT_THAT(CreateMeetMediaApiClient(std::move(configurations)),
-              StatusIs(absl::StatusCode::kInternal,
-                       HasSubstr("Failed to create data channel")));
+  EXPECT_THAT(
+      CreateMeetMediaApiClient(std::move(configurations)),
+      StatusIs(absl::StatusCode::kInternal,
+               HasSubstr("Failed to create data channel session-control")));
 }
 
 TEST(MeetMediaApiClientTest,
@@ -1105,9 +1259,59 @@ TEST(MeetMediaApiClientTest, WithMediaEntriesDataChannelInDescription) {
   const cricket::ContentInfos &sdp_content = sdp->description()->contents();
   ASSERT_THAT(sdp_content, SizeIs(1));
 
-  // NOTE: The actual label of the data channel is not communicated in the SDP.
-  // Hence no explicit check for label is performed in tests. The best we can do
-  // is ensure a data channel is negotiated in the SDP.
+  // NOTE: The actual label of the data channel is not communicated in the
+  // SDP. Hence no explicit check for label is performed in tests. The best we
+  // can do is ensure a data channel is negotiated in the SDP.
+  EXPECT_EQ(sdp_content[0].media_description()->type(),
+            cricket::MediaType::MEDIA_TYPE_DATA);
+}
+
+TEST(MeetMediaApiClientTest, WithParticipantsDataChannelInDescription) {
+  std::unique_ptr<rtc::Thread> signaling_thread = rtc::Thread::Create();
+  std::unique_ptr<rtc::Thread> worker_thread = rtc::Thread::Create();
+  signaling_thread->Start();
+  worker_thread->Start();
+
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory =
+      webrtc::CreatePeerConnectionFactory(
+          /*network_thread=*/nullptr, worker_thread.get(),
+          signaling_thread.get(),
+          /*audio_device_module=*/nullptr,
+          webrtc::CreateBuiltinAudioEncoderFactory(),
+          webrtc::CreateOpusAudioDecoderFactory(),
+          webrtc::CreateBuiltinVideoEncoderFactory(),
+          std::make_unique<webrtc::VideoDecoderFactoryTemplate<
+              webrtc::LibvpxVp8DecoderTemplateAdapter,
+              webrtc::LibvpxVp9DecoderTemplateAdapter,
+              webrtc::Dav1dDecoderTemplateAdapter>>(),
+          /*audio_mixer=*/nullptr, /*audio_processing=*/nullptr);
+
+  InternalConfigurations configurations = {
+      .enable_participants_resource = true,
+      .enable_session_control_data_channel = false,
+      .enable_stats_data_channel = false,
+      .signaling_thread = std::move(signaling_thread),
+      .worker_thread = std::move(worker_thread),
+      .api_session_observer = MockMeetMediaApiSessionObserver::Create(),
+      .sink_factory = MockMeetMediaSinkFactory::Create(),
+      .peer_connection_factory = std::move(factory),
+      .curl_request_factory = MockCurlRequestFactory::CreateUnique()};
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<MeetMediaApiClientInterface> client,
+                       CreateMeetMediaApiClient(std::move(configurations)));
+  ASSERT_OK_AND_ASSIGN(std::string local_description,
+                       client->GetLocalDescription());
+
+  std::unique_ptr<webrtc::SessionDescriptionInterface> sdp =
+      StringToSessionDescription(webrtc::SdpType::kOffer, local_description);
+  EXPECT_EQ(sdp->GetType(), webrtc::SdpType::kOffer);
+
+  const cricket::ContentInfos &sdp_content = sdp->description()->contents();
+  ASSERT_THAT(sdp_content, SizeIs(1));
+
+  // NOTE: The actual label of the data channel is not communicated in the
+  // SDP. Hence no explicit check for label is performed in tests. The best we
+  // can do is ensure a data channel is negotiated in the SDP.
   EXPECT_EQ(sdp_content[0].media_description()->type(),
             cricket::MediaType::MEDIA_TYPE_DATA);
 }
@@ -1155,9 +1359,9 @@ TEST(MeetMediaApiClientTest, WithVideoAssignmentDataChannelInDescription) {
   const cricket::ContentInfos &sdp_content = sdp->description()->contents();
   ASSERT_THAT(sdp_content, SizeIs(1));
 
-  // NOTE: The actual label of the data channel is not communicated in the SDP.
-  // Hence no explicit check for label is performed in tests. The best we can do
-  // is ensure a data channel is negotiated in the SDP.
+  // NOTE: The actual label of the data channel is not communicated in the
+  // SDP. Hence no explicit check for label is performed in tests. The best we
+  // can do is ensure a data channel is negotiated in the SDP.
   EXPECT_EQ(sdp_content[0].media_description()->type(),
             cricket::MediaType::MEDIA_TYPE_DATA);
 }
@@ -1204,9 +1408,9 @@ TEST(MeetMediaApiClientTest, WithSessionControlDataChannelInDescription) {
   const cricket::ContentInfos &sdp_content = sdp->description()->contents();
   ASSERT_THAT(sdp_content, SizeIs(1));
 
-  // NOTE: The actual label of the data channel is not communicated in the SDP.
-  // Hence no explicit check for label is performed in tests. The best we can do
-  // is ensure a data channel is negotiated in the SDP.
+  // NOTE: The actual label of the data channel is not communicated in the
+  // SDP. Hence no explicit check for label is performed in tests. The best we
+  // can do is ensure a data channel is negotiated in the SDP.
   EXPECT_EQ(sdp_content[0].media_description()->type(),
             cricket::MediaType::MEDIA_TYPE_DATA);
 }
@@ -1369,10 +1573,10 @@ TEST(MeetMediaApiClientTest, PublicApiCreateOnlyVideoEnabled) {
   const cricket::ContentInfos &sdp_content = sdp->description()->contents();
   // 1 video and data channel.
   ASSERT_THAT(sdp_content, SizeIs(2));
-  EXPECT_EQ(sdp_content[1].media_description()->type(),
-            cricket::MediaType::MEDIA_TYPE_VIDEO);
-  EXPECT_EQ(sdp_content[1].media_description()->direction(), kRecvOnly);
   EXPECT_EQ(sdp_content[0].media_description()->type(),
+            cricket::MediaType::MEDIA_TYPE_VIDEO);
+  EXPECT_EQ(sdp_content[0].media_description()->direction(), kRecvOnly);
+  EXPECT_EQ(sdp_content[1].media_description()->type(),
             cricket::MediaType::MEDIA_TYPE_DATA);
 }
 
@@ -1686,7 +1890,7 @@ TEST(MeetMediaApiClientTest,
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<MeetMediaApiClientInterface> client,
                        CreateMeetMediaApiClient(std::move(configurations)));
 
-  ResourceRequest request = {
+  MeetMediaApiClient::ResourceRequest request = {
       .hint = ResourceHint::kSessionControl,
       .session_control_request = SessionControlChannelFromClient{
           .request = {.request_id = 42, .leave_request = LeaveRequest()}}};
@@ -1737,7 +1941,7 @@ TEST(MeetMediaApiClientTest,
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<MeetMediaApiClientInterface> client,
                        CreateMeetMediaApiClient(std::move(configurations)));
 
-  ResourceRequest request = {
+  MeetMediaApiClient::ResourceRequest request = {
       .hint = ResourceHint::kVideoAssignment,
       .video_assignment_request =
           VideoAssignmentChannelFromClient{.request = {.request_id = 42}}};

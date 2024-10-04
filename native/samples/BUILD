@@ -24,6 +24,7 @@ cc_binary(
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
         "@media_api_samples//native/api:meet_media_api_client_interface",
         "@media_api_samples//native/internal:meet_media_api_client",  # buildcleaner: keep
@@ -42,6 +43,7 @@ cc_binary(
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
         "@media_api_samples//native/api:meet_media_api_client_interface",
         "@media_api_samples//native/internal:meet_media_api_client",  # buildcleaner: keep
@@ -57,10 +59,12 @@ cc_library(
     deps = [
         ":resource_parsers",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/functional:any_invocable",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
-        "@media_api_samples//native/api:conference_resources",
         "@media_api_samples//native/api:meet_media_api_client_interface",
         "@media_api_samples//native/api:meet_media_sink_interface",
         "@media_api_samples//native/internal:meet_media_api_client",  # buildcleaner: keep
@@ -75,7 +79,10 @@ cc_library(
     deps = [
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings:string_view",
-        "@media_api_samples//native/api:conference_resources",
+        "@media_api_samples//native/api:media_entries_resource",
+        "@media_api_samples//native/api:participants_resource",
+        "@media_api_samples//native/api:session_control_resource",
+        "@media_api_samples//native/api:video_assignment_resource",
         "@media_api_samples//native/internal:meet_media_api_client",  # buildcleaner: keep
         "@nlohmann_json//:json",
     ],

@@ -57,7 +57,7 @@ using ::testing::Return;
 using ::testing::ScopedMockLog;
 using ::testing::SizeIs;
 
-// TODO: b/347055783 - Update these and all Mocks to NiceMocks.
+// TODO: Update these and all Mocks to NiceMocks.
 class MockMeetVideoSink : public rtc::RefCountedObject<MeetVideoSinkInterface> {
  public:
   static rtc::scoped_refptr<MockMeetVideoSink> Create() {
@@ -400,9 +400,8 @@ TEST(MeetVideoStreamTrackTest, OnFrameMissingSsrcLogsWarning) {
                                           std::move(mock_receiver));
 
   ScopedMockLog log(kDoNotCaptureLogsYet);
-  EXPECT_CALL(log,
-              Log(WARNING, _,
-                  HasSubstr("First frame received for video stream with MID")));
+  EXPECT_CALL(log, Log(WARNING, _,
+                       HasSubstr("First frame received for stream with MID")));
 
   log.StartCapturingLogs();
 
@@ -434,9 +433,8 @@ TEST(MeetAudioStreamTrackTest, OnFrameMissingSsrcLogsWarning) {
                                           std::move(mock_receiver));
 
   ScopedMockLog log(kDoNotCaptureLogsYet);
-  EXPECT_CALL(log,
-              Log(WARNING, _,
-                  HasSubstr("First frame received for video stream with MID")));
+  EXPECT_CALL(log, Log(WARNING, _,
+                       HasSubstr("First frame received for stream with MID")));
 
   log.StartCapturingLogs();
 
