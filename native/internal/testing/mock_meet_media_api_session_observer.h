@@ -35,6 +35,7 @@ class MockMeetMediaApiSessionObserver
   MOCK_METHOD(void, OnResourceUpdate, (ResourceUpdate), (override));
   MOCK_METHOD(void, OnResourceRequestFailure, (ResourceRequestError),
               (override));
+  MOCK_METHOD(void, OnClientStateUpdate, (MeetMediaApiClientState), (override));
 };
 
 }  // namespace meet

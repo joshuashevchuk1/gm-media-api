@@ -85,6 +85,25 @@
 
 namespace meet {
 
+enum class MeetMediaApiClientState {
+  // The client has been created and is ready to connect to Meet servers.
+  kReady,
+  // The client is attempting to connect to Meet servers.
+  kConnecting,
+  // The client has successfully connected to Meet servers, but has not joined
+  // the conference. The client is waiting to be allowed into the conference.
+  kJoining,
+  // The client has joined the conference.
+  kJoined,
+  // The client was removed from the conference gracefully. Examples include
+  // leaving the conference voluntarily, being kicked out by another
+  // participant, or the conference ending.
+  kDisconnected,
+  // Disconnected for any reason other than ungraceful disconnection. Examples
+  // include network failure, server failure, or other lower level failures.
+  kFailed
+};
+
 struct MeetMediaApiClientConfiguration {
   // For values greater than zero, the Media API client will establish that many
   // video SRTP streams. After the session is initialized, no other streams will
@@ -176,17 +195,16 @@ class MeetMediaApiSessionObserverInterface : public webrtc::RefCountInterface {
     absl::Status status;
   };
 
-  virtual ~MeetMediaApiSessionObserverInterface() override = default;
+  ~MeetMediaApiSessionObserverInterface() override = default;
 
   // Invoked when a resource update is received from Meet servers.
   virtual void OnResourceUpdate(ResourceUpdate update) = 0;
 
   // Invoked when a resource request fails after transmission begins.
   virtual void OnResourceRequestFailure(ResourceRequestError error) = 0;
-  // TODO: Add callback for session state change. The media api
-  // state should only be communicated via this callback. Internally it is
-  // affected by the peer connection state, data channel states, and join flow
-  // state.
+
+  // Invoked when the client state changes.
+  virtual void OnClientStateUpdate(MeetMediaApiClientState state) = 0;
 };
 
 class MeetMediaApiClientInterface {
@@ -205,6 +223,8 @@ class MeetMediaApiClientInterface {
   };
 
   virtual ~MeetMediaApiClientInterface() = default;
+
+  virtual MeetMediaApiClientState state() const = 0;
 
   // Attempts to connect with Meet servers. This process involves
   // communicating the intent to join an active Meet conference. It establishes

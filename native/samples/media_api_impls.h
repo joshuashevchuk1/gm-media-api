@@ -94,6 +94,7 @@ class SessionObserver : public meet::MeetMediaApiSessionObserverInterface {
   ~SessionObserver() override = default;
   void OnResourceUpdate(ResourceUpdate update) override;
   void OnResourceRequestFailure(ResourceRequestError error) override;
+  void OnClientStateUpdate(meet::MeetMediaApiClientState state) override;
 
   // Sets a callback for a specific request id.
   //

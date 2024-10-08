@@ -176,4 +176,27 @@ void SessionObserver::SetResourceResponseCallback(
   response_callbacks_[request_id] = std::move(callback);
 }
 
+void SessionObserver::OnClientStateUpdate(meet::MeetMediaApiClientState state) {
+  switch (state) {
+    case meet::MeetMediaApiClientState::kReady:
+      // The client does not signal this state.
+      break;
+    case meet::MeetMediaApiClientState::kConnecting:
+      LOG(INFO) << "Client state changed to connecting.";
+      break;
+    case meet::MeetMediaApiClientState::kJoining:
+      LOG(INFO) << "Client state changed to joining.";
+      break;
+    case meet::MeetMediaApiClientState::kJoined:
+      LOG(INFO) << "Client state changed to joined.";
+      break;
+    case meet::MeetMediaApiClientState::kDisconnected:
+      LOG(INFO) << "Client state changed to disconnected.";
+      break;
+    case meet::MeetMediaApiClientState::kFailed:
+      LOG(INFO) << "Client state changed to failed.";
+      break;
+  }
+}
+
 }  // namespace media_api_impls

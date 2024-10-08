@@ -88,13 +88,15 @@ class MeetMediaApiClient : public MeetMediaApiClientInterface {
   MeetMediaApiClient(const MeetMediaApiClient&) = delete;
   MeetMediaApiClient& operator=(const MeetMediaApiClient&) = delete;
 
+  MeetMediaApiClientState state() const override;
+
   absl::Status ConnectActiveConference(absl::string_view join_endpoint,
                                        absl::string_view conference_id,
                                        absl::string_view access_token) override;
 
-  absl::Status LeaveConference(int64_t request_id) override;
-
   absl::Status SendRequest(const ResourceRequest& request) override;
+
+  absl::Status LeaveConference(int64_t request_id) override;
 
   absl::StatusOr<std::string> GetLocalDescription() const override;
 
