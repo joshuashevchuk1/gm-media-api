@@ -34,10 +34,10 @@ jobs:
       id: cache-webrtc
       uses: actions/cache@v3
       with:
-        path: |
-          webrtc-checkout
+        path: webrtc-checkout
+        key: ${{ runner.os }}-webrtc-${{ github.sha }}
         restore-keys: |
-          webrtc-
+          ${{ runner.os }}-webrtc-
 
     - name: Install depot_tools
       if: steps.cache-webrtc.outputs.cache-hit != 'true'
