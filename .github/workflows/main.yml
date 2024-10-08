@@ -27,7 +27,7 @@ jobs:
         path: app
 
     - name: Prepare dependencies
-      uses: ./prepare-deps.yml
+      uses: ./.github/workflows/prepare-deps.yml
 
     - name: Build
       run: |
