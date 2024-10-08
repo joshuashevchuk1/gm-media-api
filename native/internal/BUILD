@@ -187,6 +187,7 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@media_api_samples//native/api:media_entries_resource",
+        "@media_api_samples//native/api:media_stats_resource",
         "@media_api_samples//native/api:meet_media_api_client_interface",
         "@media_api_samples//native/api:participants_resource",
         "@media_api_samples//native/api:session_control_resource",

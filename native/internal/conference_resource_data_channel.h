@@ -25,7 +25,12 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "native/api/media_entries_resource.h"
+#include "native/api/media_stats_resource.h"
 #include "native/api/meet_media_api_client_interface.h"
+#include "native/api/participants_resource.h"
+#include "native/api/session_control_resource.h"
+#include "native/api/video_assignment_resource.h"
 #include "native/internal/resource_handler_interface.h"
 #include "webrtc/api/data_channel_interface.h"
 #include "webrtc/api/peer_connection_interface.h"
@@ -188,6 +193,32 @@ class ConferenceResourceDataChannel : public webrtc::DataChannelObserver {
   // ensure no further work is processed once the object is destroyed.
   rtc::scoped_refptr<webrtc::PendingTaskSafetyFlag> alive_flag_;
 };
+
+// Data channel for receiving media entries updates. This data channel does not
+// support sending resource requests from the client to the server.
+using MediaEntriesDataChannel =
+    ConferenceResourceDataChannel<MediaEntriesChannelToClient,
+                                  NoResourceRequestsFromClient>;
+// Data channel for receiving participants updates. This data channel does not
+// support sending resource requests from the client to the server.
+using ParticipantsDataChannel =
+    ConferenceResourceDataChannel<ParticipantsChannelToClient,
+                                  NoResourceRequestsFromClient>;
+// Data channel for sending video assignment resource requests and receiving
+// video assignment resource updates.
+using VideoAssignmentDataChannel =
+    ConferenceResourceDataChannel<VideoAssignmentChannelToClient,
+                                  VideoAssignmentChannelFromClient>;
+// Data channel for sending media stats resource requests and receiving media
+// stats resource updates.
+using MediaStatsDataChannel =
+    ConferenceResourceDataChannel<MediaStatsChannelToClient,
+                                  MediaStatsChannelFromClient>;
+// Data channel for sending session control resource requests and receiving
+// session control resource updates.
+using SessionControlDataChannel =
+    ConferenceResourceDataChannel<SessionControlChannelToClient,
+                                  SessionControlChannelFromClient>;
 
 // Explicit instantiations in conference_resource_data_channel.cc file
 extern template class ConferenceResourceDataChannel<

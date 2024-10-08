@@ -416,64 +416,56 @@ CreateMeetMediaApiClient(InternalConfigurations configurations) {
     }
   }
 
-  std::unique_ptr<MeetMediaApiClient::MediaEntriesDataChannel>
-      media_entries_channel;
+  std::unique_ptr<MediaEntriesDataChannel> media_entries_channel;
   if (configurations.enable_media_entries_resource) {
     auto media_entries_resource_handler =
         std::make_unique<MediaEntriesResourceHandler>();
-    auto media_entries_create_status =
-        MeetMediaApiClient::MediaEntriesDataChannel::Create(
-            configurations.api_session_observer, peer_connection,
-            kMediaEntriesDataChannelLabel,
-            std::make_unique<MediaEntriesResourceHandler>(),
-            configurations.worker_thread.get());
+    auto media_entries_create_status = MediaEntriesDataChannel::Create(
+        configurations.api_session_observer, peer_connection,
+        kMediaEntriesDataChannelLabel,
+        std::make_unique<MediaEntriesResourceHandler>(),
+        configurations.worker_thread.get());
     if (!media_entries_create_status.ok()) {
       return media_entries_create_status.status();
     }
     media_entries_channel = *std::move(media_entries_create_status);
   }
 
-  std::unique_ptr<MeetMediaApiClient::ParticipantsDataChannel>
-      participants_channel;
+  std::unique_ptr<ParticipantsDataChannel> participants_channel;
   if (configurations.enable_participants_resource) {
-    auto participants_create_status =
-        MeetMediaApiClient::ParticipantsDataChannel::Create(
-            configurations.api_session_observer, peer_connection,
-            kParticipantsDataChannelLabel,
-            std::make_unique<ParticipantsResourceHandler>(),
-            configurations.worker_thread.get());
+    auto participants_create_status = ParticipantsDataChannel::Create(
+        configurations.api_session_observer, peer_connection,
+        kParticipantsDataChannelLabel,
+        std::make_unique<ParticipantsResourceHandler>(),
+        configurations.worker_thread.get());
     if (!participants_create_status.ok()) {
       return participants_create_status.status();
     }
     participants_channel = *std::move(participants_create_status);
   }
 
-  std::unique_ptr<MeetMediaApiClient::VideoAssignmentDataChannel>
-      video_assignment_channel;
+  std::unique_ptr<VideoAssignmentDataChannel> video_assignment_channel;
   if (configurations.enable_video_assignment_resource) {
-    auto video_assignment_create_status =
-        MeetMediaApiClient::VideoAssignmentDataChannel::Create(
-            configurations.api_session_observer, peer_connection,
-            kVideoAssignmentDataChannelLabel,
-            std::make_unique<VideoAssignmentResourceHandler>(),
-            configurations.worker_thread.get());
+    auto video_assignment_create_status = VideoAssignmentDataChannel::Create(
+        configurations.api_session_observer, peer_connection,
+        kVideoAssignmentDataChannelLabel,
+        std::make_unique<VideoAssignmentResourceHandler>(),
+        configurations.worker_thread.get());
     if (!video_assignment_create_status.ok()) {
       return video_assignment_create_status.status();
     }
     video_assignment_channel = *std::move(video_assignment_create_status);
   }
 
-  std::unique_ptr<MeetMediaApiClient::SessionControlDataChannel>
-      session_control_channel;
+  std::unique_ptr<SessionControlDataChannel> session_control_channel;
   // This is always required to be signaled by the client. Can only be disabled
   // for testing purposes.
   if (configurations.enable_session_control_data_channel) {
-    auto session_control_create_status =
-        MeetMediaApiClient::SessionControlDataChannel::Create(
-            configurations.api_session_observer, peer_connection,
-            kSessionControlDataChannelLabel,
-            std::make_unique<SessionControlResourceHandler>(),
-            configurations.worker_thread.get());
+    auto session_control_create_status = SessionControlDataChannel::Create(
+        configurations.api_session_observer, peer_connection,
+        kSessionControlDataChannelLabel,
+        std::make_unique<SessionControlResourceHandler>(),
+        configurations.worker_thread.get());
     if (!session_control_create_status.ok()) {
       return session_control_create_status.status();
     }

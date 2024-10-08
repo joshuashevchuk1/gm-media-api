@@ -99,20 +99,6 @@ class MeetMediaApiClient : public MeetMediaApiClientInterface {
   absl::StatusOr<std::string> GetLocalDescription() const override;
 
  private:
-  // Just convenience aliases for specific conference resource data channels.
-  using MediaEntriesDataChannel =
-      ConferenceResourceDataChannel<MediaEntriesChannelToClient,
-                                    NoResourceRequestsFromClient>;
-  using ParticipantsDataChannel =
-      ConferenceResourceDataChannel<ParticipantsChannelToClient,
-                                    NoResourceRequestsFromClient>;
-  using VideoAssignmentDataChannel =
-      ConferenceResourceDataChannel<VideoAssignmentChannelToClient,
-                                    VideoAssignmentChannelFromClient>;
-  using SessionControlDataChannel =
-      ConferenceResourceDataChannel<SessionControlChannelToClient,
-                                    SessionControlChannelFromClient>;
-
   // Contains all data channels that could possibly be opened for a Media API
   // session. Passed to the constructor as a parameter struct for ease of future
   // extension. New data channels should be added here as opposed to extending
