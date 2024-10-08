@@ -32,7 +32,7 @@ jobs:
     - name: Build
       run: |
           pushd app
-          sed -i -e 's|webrtc_path = ".*"|webrtc_path = "${{ pwd }}/webrtc-checkout/"|g' WORKSPACE
+          sed -i -e 's|webrtc_path = ".*"|webrtc_path = "${{ github.workspace }}/webrtc-checkout/"|g' WORKSPACE
           bazel build ...
 
     - name: Test
