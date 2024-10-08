@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Prepare dependencies
-on:
-  workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Prepare dependencies
-      uses: ./.github/actions/prepare-deps
+mkdir webrtc-checkout
+pushd webrtc-checkout
+fetch --no-history --nohooks webrtc
+sed -i -e "s|'src/resources'],|'src/resources'],'condition':'rtc_include_tests==true',|" src/DEPS
+gclient sync
+mv src webrtc
+pushd webrtc
+gn gen out/Default --args='is_debug=false use_custom_libcxx=false rtc_include_tests=false rtc_build_examples=false dcheck_always_on=true rtc_use_x11=false use_rtti=true'
+ninja -C out/Default
+popd
+popd

@@ -23,15 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        path: app
 
     - name: Prepare dependencies
-      uses: ./.github/workflows/prepare-deps.yml
+      uses: ./.github/actions/prepare-deps
 
     - name: Build
       run: |
-          pushd app
           sed -i -e 's|webrtc_path = ".*"|webrtc_path = "${{ github.workspace }}/webrtc-checkout/"|g' WORKSPACE
           bazel build ...
 
