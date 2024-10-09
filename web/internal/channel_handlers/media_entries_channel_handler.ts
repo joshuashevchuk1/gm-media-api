@@ -281,11 +281,15 @@ export class MediaEntriesChannelHandler {
             },
             mediaEntries: subscribableDelegate.getSubscribable(),
           };
+          // TODO: Use participant resource name instead of id.
+          // tslint:disable-next-line:deprecation
+          const ids: Set<number> = resource.mediaEntry.participantId
+            ? // tslint:disable-next-line:deprecation
+              new Set([resource.mediaEntry.participantId])
+            : new Set();
           const internalParticipant: InternalParticipant = {
             name: resource.mediaEntry.participant,
-            // TODO: Use participant resource name instead of id.
-            // tslint:disable-next-line:deprecation
-            id: resource.mediaEntry.participantId,
+            ids,
             mediaEntries: subscribableDelegate,
           };
           this.nameParticipantMap.set(

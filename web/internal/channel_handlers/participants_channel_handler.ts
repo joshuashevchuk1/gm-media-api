@@ -82,11 +82,15 @@ export class ParticipantsChannelHandler {
         return;
       }
       this.idParticipantMap.delete(deletedResource.id);
-      this.nameParticipantMap.delete(participant.participant.name);
       const deletedParticipant = this.internalParticipantMap.get(participant);
       if (!deletedParticipant) {
         return;
       }
+      deletedParticipant.ids.delete(deletedResource.id);
+      if (deletedParticipant.ids.size !== 0) {
+        return;
+      }
+      this.nameParticipantMap.delete(participant.participant.name);
       participants = participants.filter((p) => p !== participant);
       this.internalParticipantMap.delete(participant);
       deletedParticipant.mediaEntries.get().forEach((mediaEntry) => {
@@ -123,15 +127,13 @@ export class ParticipantsChannelHandler {
         | SubscribableDelegate<MediaEntry[]>
         | undefined;
       let existingParticipant: LocalParticipant | undefined;
+      let existingIds: Set<number> | undefined;
       if (this.idParticipantMap.has(resource.id)) {
         existingParticipant = this.idParticipantMap.get(resource.id);
-        this.idParticipantMap.delete(resource.id);
-        this.nameParticipantMap.delete(resource.participant.name);
       } else if (this.nameParticipantMap.has(resource.participant.name)) {
         existingParticipant = this.nameParticipantMap.get(
           resource.participant.name,
         );
-        this.nameParticipantMap.delete(resource.participant.name);
       }
 
       if (existingParticipant) {
@@ -139,8 +141,17 @@ export class ParticipantsChannelHandler {
           this.internalParticipantMap.get(existingParticipant);
         if (internalParticipant) {
           existingMediaEntriesDelegate = internalParticipant.mediaEntries;
+          // (TODO: Remove this once we are using participant
+          // names as identifiers. Right now, it is possible for a participant to
+          // have multiple ids due to updates being treated as new resources.
+          existingIds = internalParticipant.ids;
+          existingIds.forEach((id) => {
+            this.idParticipantMap.delete(id);
+          });
         }
+        this.nameParticipantMap.delete(existingParticipant.participant.name);
         this.internalParticipantMap.delete(existingParticipant);
+        participants = participants.filter((p) => p !== existingParticipant);
         this.channelLogger?.log(
           LogLevel.ERRORS,
           'Participants channel: participant resource already exists',
@@ -151,10 +162,13 @@ export class ParticipantsChannelHandler {
       const participantElement = createParticipant(
         resource,
         existingMediaEntriesDelegate,
+        existingIds,
       );
       const participant = participantElement.participant;
       const internalParticipant = participantElement.internalParticipant;
-      this.idParticipantMap.set(resource.id, participant);
+      participantElement.internalParticipant.ids.forEach((id) => {
+        this.idParticipantMap.set(id, participant);
+      });
       if (resource.participant.name) {
         this.nameParticipantMap.set(resource.participant.name, participant);
       }
@@ -187,6 +201,7 @@ interface InternalParticipantElement {
 function createParticipant(
   resource: ParticipantResource,
   mediaEntriesDelegate = new SubscribableDelegate<MediaEntry[]>([]),
+  existingIds = new Set<number>(),
 ): InternalParticipantElement {
   if (!resource.id) {
     throw new Error('Participant resource must have an id');
@@ -197,9 +212,11 @@ function createParticipant(
     mediaEntries: mediaEntriesDelegate.getSubscribable(),
   };
 
+  existingIds.add(resource.id);
+
   const internalParticipant: InternalParticipant = {
     name: resource.participant.name,
-    id: resource.id,
+    ids: existingIds,
     mediaEntries: mediaEntriesDelegate,
   };
   return {

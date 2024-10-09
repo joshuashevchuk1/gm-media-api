@@ -75,7 +75,12 @@ export interface InternalMeetStreamTrack {
  * subscribable delegates.
  */
 export interface InternalParticipant {
-  readonly id: number;
+  // TODO - Remove this once we are using participant names as
+  // identifiers. Right now, it is possible for a participant to have multiple
+  // ids due to updates being treated as new resources. This occurance should
+  // become less frequent once we ignore child participants but can will still
+  // be possible until participant names are used as identifiers.
+  readonly ids: Set<number>;
   readonly name: string;
   readonly mediaEntries: SubscribableDelegate<MediaEntry[]>;
 }
