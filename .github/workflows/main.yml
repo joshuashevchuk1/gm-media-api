@@ -17,21 +17,21 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-    - main
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Prepare dependencies
-      uses: ./.github/actions/prepare-deps
+      - name: Prepare dependencies
+        uses: ./.github/actions/prepare-deps
 
-    - name: Build
-      run: |
+      - name: Build
+        run: |
           sed -i -e 's|webrtc_path = ".*"|webrtc_path = "${{ github.workspace }}/webrtc-checkout/"|g' WORKSPACE
           bazel build ...
 
-    - name: Test
-      run: |
+      - name: Test
+        run: |
           bazel test ...

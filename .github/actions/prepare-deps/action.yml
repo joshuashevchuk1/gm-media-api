@@ -17,28 +17,29 @@ description: 'Fetches and builds tools and dependencies'
 runs:
   using: 'composite'
   steps:
-  - name: Install tools
-    run: install-tools.sh
-    shell: bash
+    - name: Install tools
+      run: install-tools.sh
+      shell: bash
 
-  # Caches are TTL'd to 7 days.
-  # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy
-  - name: Cache WebRTC build
-    id: cache-webrtc
-    uses: actions/cache@v3
-    with:
-      path: webrtc-checkout
-      key: ${{ runner.os }}-webrtc-${{ github.sha }}
-      restore-keys: |
-        ${{ runner.os }}-webrtc-
+    # Caches are TTL'd to 7 days.
+    # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy
+    - name: Cache WebRTC build
+      id: cache-webrtc
+      uses: actions/cache@v3
+      with:
+        path: webrtc-checkout
+        key: ${{ runner.os }}-webrtc-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-webrtc-
 
-  - name: Install depot_tools
-    if: steps.cache-webrtc.outputs.cache-hit != 'true'
-    run: |
+    - name: Install depot_tools
+      if: steps.cache-webrtc.outputs.cache-hit != 'true'
+      run: |
         git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+      shell: bash
 
-  - name: Fetch and build WebRTC
-    if: steps.cache-webrtc.outputs.cache-hit != 'true'
-    run: build-webrtc.sh
-    shell: bash
+    - name: Fetch and build WebRTC
+      if: steps.cache-webrtc.outputs.cache-hit != 'true'
+      run: build-webrtc.sh
+      shell: bash
