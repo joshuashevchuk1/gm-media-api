@@ -236,9 +236,17 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
 
     // ---- UTILITY DATA CHANNELS -----
 
+    // All data channels must be reliable and ordered.
+    const dataChannelConfig = {
+      ordered: true,
+      reliable: true,
+    };
+
     // Always create the session and media stats control channel.
-    this.sessionControlChannel =
-      this.peerConnection.createDataChannel('session-control');
+    this.sessionControlChannel = this.peerConnection.createDataChannel(
+      'session-control',
+      dataChannelConfig,
+    );
     let sessionControlchannelLogger;
     if (this.requiredConfiguration?.logsCallback) {
       sessionControlchannelLogger = new ChannelLogger(
@@ -252,8 +260,10 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       sessionControlchannelLogger,
     );
 
-    this.mediaStatsChannel =
-      this.peerConnection.createDataChannel('media-stats');
+    this.mediaStatsChannel = this.peerConnection.createDataChannel(
+      'media-stats',
+      dataChannelConfig,
+    );
     let mediaStatsChannelLogger;
     if (this.requiredConfiguration?.logsCallback) {
       mediaStatsChannelLogger = new ChannelLogger(
@@ -271,8 +281,10 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
 
     // We only need the video assignment channel if we are requesting video.
     if (this.requiredConfiguration.numberOfVideoStreams > 0) {
-      this.videoAssignmentChannel =
-        this.peerConnection.createDataChannel('video-assignment');
+      this.videoAssignmentChannel = this.peerConnection.createDataChannel(
+        'video-assignment',
+        dataChannelConfig,
+      );
       let videoAssignmentChannelLogger;
       if (this.requiredConfiguration?.logsCallback) {
         videoAssignmentChannelLogger = new ChannelLogger(
@@ -295,8 +307,10 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       this.requiredConfiguration.numberOfVideoStreams > 0 ||
       this.requiredConfiguration.enableAudioStreams
     ) {
-      this.mediaEntriesChannel =
-        this.peerConnection.createDataChannel('media-entries');
+      this.mediaEntriesChannel = this.peerConnection.createDataChannel(
+        'media-entries',
+        dataChannelConfig,
+      );
       let mediaEntriesChannelLogger;
       if (this.requiredConfiguration?.logsCallback) {
         mediaEntriesChannelLogger = new ChannelLogger(
