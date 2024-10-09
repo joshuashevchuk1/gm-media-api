@@ -18,7 +18,7 @@ runs:
   using: 'composite'
   steps:
     - name: Install tools
-      run: install-tools.sh
+      run: ./.github/actions/prepare-deps/install-tools.sh
       shell: bash
 
     # Caches are TTL'd to 7 days.
@@ -41,5 +41,5 @@ runs:
 
     - name: Fetch and build WebRTC
       if: steps.cache-webrtc.outputs.cache-hit != 'true'
-      run: build-webrtc.sh
+      run: ./.github/actions/prepare-deps/build-webrtc.sh
       shell: bash
