@@ -26,18 +26,18 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare dependencies
+      - name: 📦 Prepare dependencies
         uses: ./.github/actions/prepare-deps
 
-      - name: Build
+      - name: 🚧 Build
         run: |
           sed -i -e 's|webrtc_path = ".*"|webrtc_path = "${{ github.workspace }}/webrtc-checkout/"|g' WORKSPACE
           bazel build ...
 
-      - name: Test
+      - name: 🔍 Test
         run: |
           bazel test ...

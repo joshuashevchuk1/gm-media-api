@@ -17,7 +17,14 @@ description: 'Fetches and builds tools and dependencies'
 runs:
   using: 'composite'
   steps:
-    - name: Install tools
+    # https://github.com/actions/runner-images/issues/709
+    - name: ♻️ Free up disk space
+      run: |
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      shell: bash
+
+    - name: 🔧 Install tools
       run: |
         sudo apt-get update && sudo apt-get install -y curl gpg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
@@ -28,7 +35,7 @@ runs:
 
     # Caches are TTL'd to 7 days.
     # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy
-    - name: Cache WebRTC build
+    - name: 📦 Cache WebRTC build
       id: cache-webrtc
       uses: actions/cache@v3
       with:
@@ -37,19 +44,22 @@ runs:
         restore-keys: |
           ${{ runner.os }}-webrtc-
 
-    - name: Install depot_tools
+    - name: 🔨 Install depot_tools
       if: steps.cache-webrtc.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         echo "$(pwd)/depot_tools" >> $GITHUB_PATH
       shell: bash
 
-    - name: Fetch and build WebRTC
+    - name: 📡 Fetch and build WebRTC
       if: steps.cache-webrtc.outputs.cache-hit != 'true'
       run: |
         mkdir webrtc-checkout
         pushd webrtc-checkout
-        fetch --no-history --nohooks webrtc
+        fetch --nohooks webrtc
+        pushd src
+        git checkout a61a25a0b1b6a6009d3a18d676d8069b338b0187
+        popd
         sed -i -e "s|'src/resources'],|'src/resources'],'condition':'rtc_include_tests==true',|" src/DEPS
         gclient sync
         mv src webrtc
