@@ -40,19 +40,17 @@ runs:
       uses: actions/cache@v3
       with:
         path: webrtc-checkout
-        key: ${{ runner.os }}-webrtc-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-webrtc-
+        key: ${{ runner.os }}-webrtc
 
     - name: 🔨 Install depot_tools
-      if: steps.cache-webrtc.outputs.cache-hit != 'true'
+      if: ${{ steps.cache-webrtc.outputs.cache-hit != 'true' }}
       run: |
         git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         echo "$(pwd)/depot_tools" >> $GITHUB_PATH
       shell: bash
 
     - name: 📡 Fetch and build WebRTC
-      if: steps.cache-webrtc.outputs.cache-hit != 'true'
+      if: ${{ steps.cache-webrtc.outputs.cache-hit != 'true' }}
       run: |
         mkdir webrtc-checkout
         pushd webrtc-checkout
