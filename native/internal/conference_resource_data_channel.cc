@@ -46,8 +46,8 @@ namespace meet {
 
 namespace {
 // Resource data channels are expected to be configured as reliable and ordered.
-constexpr webrtc::DataChannelInit kDataChannelConfig = {.reliable = true,
-                                                        .ordered = true};
+const webrtc::DataChannelInit kDataChannelConfig = {.reliable = true,
+                                                    .ordered = true};
 using enum webrtc::DataChannelInterface::DataState;
 
 }  // namespace

@@ -40,7 +40,7 @@
 
 namespace meet {
 
-inline constexpr std::string ResourceHintToString(ResourceHint hint) {
+inline std::string ResourceHintToString(ResourceHint hint) {
   switch (hint) {
     case ResourceHint::kSessionControl:
       return "session-control";
@@ -57,7 +57,7 @@ inline constexpr std::string ResourceHintToString(ResourceHint hint) {
   }
 }
 
-inline constexpr ResourceHint StringToResourceHint(absl::string_view hint) {
+inline ResourceHint StringToResourceHint(absl::string_view hint) {
   if (hint == "session-control") {
     return ResourceHint::kSessionControl;
   } else if (hint == "video-assignment") {
