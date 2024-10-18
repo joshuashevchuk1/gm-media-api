@@ -53,6 +53,7 @@ cc_library(
     visibility = ["@media_api_samples//native:__subpackages__"],
     deps = [
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/types:optional",
     ],
