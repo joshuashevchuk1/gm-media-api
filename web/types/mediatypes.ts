@@ -61,7 +61,7 @@ export interface Participant {
 export interface BaseParticipant {
   // Resource name of the participant.
   // Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
-  readonly name: string;
+  name?: string;
   signedInUser?: SignedInUser;
   anonymousUser?: AnonymousUser;
   phoneUser?: PhoneUser;
