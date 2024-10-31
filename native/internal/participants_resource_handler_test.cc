@@ -37,6 +37,7 @@ TEST(ParticipantsResourceHandlerTest, ParsesSignedInUserFromSnapshot) {
         "participant": {
           "participantId": 7,
           "name": "some-participant-name",
+          "participantKey": "some-participant-key",
           "signedInUser": {
             "user": "some-obfuscated-gaia-id",
             "displayName": "some-display-name"
@@ -55,10 +56,36 @@ TEST(ParticipantsResourceHandlerTest, ParsesSignedInUserFromSnapshot) {
   Participant participant = parsed_update.resources[0].participant.value();
   EXPECT_EQ(participant.participant_id, 7);
   EXPECT_EQ(participant.name, "some-participant-name");
+  EXPECT_EQ(participant.participant_key, "some-participant-key");
   ASSERT_TRUE(participant.signed_in_user.has_value());
   EXPECT_EQ(participant.signed_in_user.value().user, "some-obfuscated-gaia-id");
   EXPECT_EQ(participant.signed_in_user.value().display_name,
             "some-display-name");
+}
+
+TEST(ParticipantsResourceHandlerTest,
+     ParsesSignedInUserWithoutOptionalFieldsFromSnapshot) {
+  ParticipantsResourceHandler handler;
+  auto status_or_parsed_update = handler.ParseUpdate(R"json({
+    "resources": [{
+      "id": 3,
+        "participant": {
+          "participantId": 7,
+          "signedInUser": {
+            "user": "some-obfuscated-gaia-id",
+            "displayName": "some-display-name"
+          }
+        }
+    }]
+  })json");
+
+  ASSERT_TRUE(status_or_parsed_update.ok());
+  ParticipantsChannelToClient parsed_update =
+      std::move(status_or_parsed_update).value();
+
+  Participant participant = parsed_update.resources[0].participant.value();
+  EXPECT_FALSE(participant.name.has_value());
+  EXPECT_FALSE(participant.participant_key.has_value());
 }
 
 TEST(ParticipantsResourceHandlerTest, ParsesAnonymousUserFromDeletedSnapshot) {

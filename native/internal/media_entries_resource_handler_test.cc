@@ -36,8 +36,10 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
           {
             "id": 424242,
             "mediaEntry": {
-              "participant": "some-participant-name",
-              "session": "some-session-name",
+              "participant": "some-participant",
+              "participantKey": "some-participant-key",
+              "session": "some-session",
+              "sessionName": "some-session-name",
               "audioCsrc": 111,
               "videoCsrcs": [
                 123,
@@ -52,8 +54,10 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
           {
             "id": 242424,
             "mediaEntry": {
-              "participant": "another-participant-name",
-              "session": "another-session-name",
+              "participant": "another-participant",
+              "participantKey": "another-participant-key",
+              "session": "another-session",
+              "sessionName": "another-session-name",
               "audioCsrc": 222,
               "videoCsrcs": [
                 555,
@@ -71,7 +75,9 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
   ASSERT_TRUE(parsed_update.resources[0].media_entry.has_value());
   MediaEntry media_entry1 = *parsed_update.resources[0].media_entry;
 
-  EXPECT_EQ(media_entry1.participant_name, "some-participant-name");
+  EXPECT_EQ(media_entry1.participant, "some-participant");
+  EXPECT_EQ(media_entry1.participant_key, "some-participant-key");
+  EXPECT_EQ(media_entry1.session, "some-session");
   EXPECT_EQ(media_entry1.session_name, "some-session-name");
   EXPECT_EQ(media_entry1.audio_csrc, 111);
   EXPECT_THAT(media_entry1.video_csrcs, ElementsAre(123, 456));
@@ -83,7 +89,9 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
   ASSERT_TRUE(parsed_update.resources[1].media_entry.has_value());
   MediaEntry media_entry2 = parsed_update.resources[1].media_entry.value();
 
-  EXPECT_EQ(media_entry2.participant_name, "another-participant-name");
+  EXPECT_EQ(media_entry2.participant, "another-participant");
+  EXPECT_EQ(media_entry2.participant_key, "another-participant-key");
+  EXPECT_EQ(media_entry2.session, "another-session");
   EXPECT_EQ(media_entry2.session_name, "another-session-name");
   EXPECT_EQ(media_entry2.audio_csrc, 222);
   EXPECT_THAT(media_entry2.video_csrcs, ElementsAre(555, 666));
@@ -91,6 +99,38 @@ TEST(MediaEntriesResourceHandlerTest, ParsesMultipleResourceSnapshots) {
   EXPECT_FALSE(media_entry2.screenshare);
   EXPECT_FALSE(media_entry2.audio_muted);
   EXPECT_EQ(parsed_update.resources[1].id, 242424);
+}
+
+TEST(MediaEntriesResourceHandlerTest,
+     ParsesSignedInUserWithoutOptionalFieldsFromSnapshot) {
+  auto status_or_parsed_update =
+      MediaEntriesResourceHandler().ParseUpdate(R"json({
+        "resources": [
+          {
+            "id": 424242,
+            "mediaEntry": {
+              "audioCsrc": 111,
+              "videoCsrcs": [
+                123,
+                456
+              ],
+              "presenter": true,
+              "screenshare": true,
+              "audioMuted": true,
+              "videoMuted": true
+            }
+          }
+        ]
+    })json");
+
+  ASSERT_TRUE(status_or_parsed_update.ok());
+  MediaEntriesChannelToClient parsed_update =
+      std::move(status_or_parsed_update).value();
+  MediaEntry media_entry1 = *parsed_update.resources[0].media_entry;
+  EXPECT_FALSE(media_entry1.participant.has_value());
+  EXPECT_FALSE(media_entry1.participant_key.has_value());
+  EXPECT_FALSE(media_entry1.session.has_value());
+  EXPECT_FALSE(media_entry1.session_name.has_value());
 }
 
 TEST(MediaEntriesResourceHandlerTest, NoMediaEntryIsOk) {
@@ -119,7 +159,7 @@ TEST(MediaEntriesResourceHandlerTest, ResourceSnapshotIdIsZeroIfMissing) {
         "resources": [
           {
             "mediaEntry": {
-              "participant": "some-participant-name",
+              "participant": "some-participant",
               "session": "some-session-name",
               "audioCsrc": 111,
               "videoCsrcs": [

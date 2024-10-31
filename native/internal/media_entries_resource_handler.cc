@@ -87,17 +87,31 @@ MediaEntriesResourceHandler::ParseUpdate(absl::string_view update) {
           media_entry_field != nullptr) {
         MediaEntry media_entry;
 
-        // Resources.resourceSnapshot.mediaEntry.participantName
-        if (const Json* participant_name_field =
+        // Resources.resourceSnapshot.mediaEntry.participant
+        if (const Json* participant_field =
                 FindOrNull(*media_entry_field, "participant");
-            participant_name_field != nullptr) {
-          media_entry.participant_name =
-              participant_name_field->get<std::string>();
+            participant_field != nullptr) {
+          media_entry.participant = participant_field->get<std::string>();
+        }
+
+        // Resources.resourceSnapshot.mediaEntry.participantKey
+        if (const Json* participant_key_field =
+                FindOrNull(*media_entry_field, "participantKey");
+            participant_key_field != nullptr) {
+          media_entry.participant_key =
+              participant_key_field->get<std::string>();
+        }
+
+        // Resources.resourceSnapshot.mediaEntry.session
+        if (const Json* session_field =
+                FindOrNull(*media_entry_field, "session");
+            session_field != nullptr) {
+          media_entry.session = session_field->get<std::string>();
         }
 
         // Resources.resourceSnapshot.mediaEntry.sessionName
         if (const Json* session_name_field =
-                FindOrNull(*media_entry_field, "session");
+                FindOrNull(*media_entry_field, "sessionName");
             session_name_field != nullptr) {
           media_entry.session_name = session_name_field->get<std::string>();
         }

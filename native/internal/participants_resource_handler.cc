@@ -101,6 +101,12 @@ ParticipantsResourceHandler::ParseUpdate(absl::string_view update) {
           participant.name = id_field->get<std::string>();
         }
 
+        if (const Json* id_field =
+                FindOrNull(*participant_field, "participantKey");
+            id_field != nullptr) {
+          participant.participant_key = id_field->get<std::string>();
+        }
+
         // Resources.resourceSnapshot.participant.signedInUser
         if (const Json* signed_in_user_field =
                 FindOrNull(*participant_field, "signedInUser");
