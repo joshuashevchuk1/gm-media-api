@@ -225,6 +225,38 @@ cc_test(
 )
 
 cc_library(
+    name = "media_stats_resource_handler",
+    srcs = ["media_stats_resource_handler.cc"],
+    hdrs = [
+        "media_stats_resource_handler.h",
+    ],
+    deps = [
+        ":resource_handler_interface",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@media_api_samples//native/api:media_stats_resource",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "media_stats_resource_handler_test",
+    srcs = ["media_stats_resource_handler_test.cc"],
+    deps = [
+        ":media_stats_resource_handler",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+        "@media_api_samples//native/api:media_stats_resource",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_library(
     name = "participants_resource_handler",
     srcs = ["participants_resource_handler.cc"],
     hdrs = [
