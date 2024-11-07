@@ -165,7 +165,10 @@ export class MediaEntriesChannelHandler {
       let internalMediaEntry: InternalMediaEntry | undefined;
       let mediaEntry: MediaEntry | undefined;
       let videoCsrc = 0;
-      if (resource.mediaEntry.videoCsrcs.length > 0) {
+      if (
+        resource.mediaEntry.videoCsrcs &&
+        resource.mediaEntry.videoCsrcs.length > 0
+      ) {
         // We expect there to only be one video Csrcs. There is possibility
         // for this to be more than value in WebRTC but unlikely in Meet.
         // TODO : Explore making video csrcs field singluar.

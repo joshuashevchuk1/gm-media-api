@@ -333,7 +333,7 @@ export declare interface MediaEntry extends ResourceSnapshot {
     /** CSRC for any audio stream contributed by this participant. */
     audioCsrc?: number;
     /** CSRCs for any video streams contributed by this participant. */
-    videoCsrcs: number[];
+    videoCsrcs?: number[];
     /** Whether the current entry is presentating. */
     presenter: boolean;
     /** Whether the current entry is a screenshare. */
