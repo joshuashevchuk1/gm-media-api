@@ -50,6 +50,8 @@ export function createMediaEntry({
   videoCsrc,
   videoSsrc,
   id,
+  session = '',
+  sessionName = '',
 }: {
   id: number;
   audioMuted?: boolean;
@@ -63,6 +65,8 @@ export function createMediaEntry({
   videoCsrc?: number;
   audioCsrc?: number;
   videoSsrc?: number;
+  session?: string;
+  sessionName?: string;
 }): InternalMediaEntryElement {
   const participantDelegate = new SubscribableDelegate<Participant | undefined>(
     participant,
@@ -90,6 +94,8 @@ export function createMediaEntry({
     mediaLayout: mediaLayoutDelegate.getSubscribable(),
     audioMeetStreamTrack: audioMeetStreamTrackDelegate.getSubscribable(),
     videoMeetStreamTrack: videoMeetStreamTrackDelegate.getSubscribable(),
+    sessionName,
+    session,
   };
   const internalMediaEntry: InternalMediaEntry = {
     id,

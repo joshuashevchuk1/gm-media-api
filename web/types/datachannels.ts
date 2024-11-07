@@ -156,10 +156,20 @@ export declare interface ParticipantResource extends ResourceSnapshot {
  */
 export declare interface BaseParticipant extends ResourceSnapshot {
   /**
-   * Resource name for a participant.
+   * Resource name for a participant. Unused for now.
    * Format: `conferenceRecords/{conference_record}/participants/{participant}`
    */
-  name: string;
+  name?: string;
+  /**
+   * Participant key of associated participant. The user must construct the
+   * resource name from this field to create an Meet API reference.
+   * Format is `participants/{participant}`
+   * You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
+   * and use the conference record to construct the participant name in the
+   * format of
+   * `conferenceRecords/{conference_record}/participants/{participant}`
+   */
+  participantKey?: string;
   participantId: number;
   signedInUser?: SignedInUser;
   anonymousUser?: AnonymousUser;
@@ -270,26 +280,60 @@ export declare interface MediaEntry extends ResourceSnapshot {
      * See
      * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
      * for more info.
+     *
      * Format is
      * `conferenceRecords/{conference_record}/participants/{participant}` Use this
      * to correlate with other media entries produced by the same participant.
      * For example, a participant with multiple devices active in the same
      * meeting.
+     * Unused for now.
      */
-    participant: string;
+    participant?: string;
+
+    /**
+     * Participant key of associated participant. The user must construct the
+     * resource name from this field to create a Meet API reference.
+     *
+     * Format is`participants/{participant}`
+     *
+     * You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
+     * and use the conference record to construct the participant name in the
+     * format of
+     * `conferenceRecords/{conference_record}/participants/{participant}`
+     */
+    participantKey?: string;
 
     /**
      * Participant session name. There should be a one to one mapping of session
      * to Media Entry. See
      * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions
-     * for more info. Format is
+     * for more info.
+     *
+     * Format is
      * `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
+     * Unused for now.
      */
-    session: string;
+    session?: string;
+
+    /**
+     * The session id of the media entry. The user must construct the
+     * session name from this field to create an Meet API reference.
+     * This can be done by combining the conference record, participant key, and
+     * session id.
+     *
+     * Format is
+     * `participants/{participant}/participantSessions/{participant_session}`
+     *
+     * You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
+     * and use the conference record to construct the participant name in the
+     * format of
+     * `conferenceRecords/{conference_record}/participants/{participant}`
+     */
+    sessionName?: string;
     /** CSRC for any audio stream contributed by this participant. */
     audioCsrc?: number;
     /** CSRCs for any video streams contributed by this participant. */
-    videoCsrcs: number[];
+    videoCsrcs?: number[];
     /** Whether the current entry is presentating. */
     presenter: boolean;
     /** Whether the current entry is a screenshare. */

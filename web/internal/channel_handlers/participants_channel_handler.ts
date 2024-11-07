@@ -90,7 +90,9 @@ export class ParticipantsChannelHandler {
       if (deletedParticipant.ids.size !== 0) {
         return;
       }
-      this.nameParticipantMap.delete(participant.participant.name);
+      if (participant.participant.name) {
+        this.nameParticipantMap.delete(participant.participant.name);
+      }
       participants = participants.filter((p) => p !== participant);
       this.internalParticipantMap.delete(participant);
       deletedParticipant.mediaEntries.get().forEach((mediaEntry) => {
@@ -130,10 +132,21 @@ export class ParticipantsChannelHandler {
       let existingIds: Set<number> | undefined;
       if (this.idParticipantMap.has(resource.id)) {
         existingParticipant = this.idParticipantMap.get(resource.id);
-      } else if (this.nameParticipantMap.has(resource.participant.name)) {
+      } else if (
+        resource.participant.name &&
+        this.nameParticipantMap.has(resource.participant.name)
+      ) {
         existingParticipant = this.nameParticipantMap.get(
           resource.participant.name,
         );
+      } else if (resource.participant.participantKey) {
+        existingParticipant = Array.from(
+          this.internalParticipantMap.entries(),
+        ).find(
+          ([participant, _]) =>
+            participant.participant.participantKey ===
+            resource.participant.participantKey,
+        )?.[0];
       }
 
       if (existingParticipant) {
@@ -149,7 +162,9 @@ export class ParticipantsChannelHandler {
             this.idParticipantMap.delete(id);
           });
         }
-        this.nameParticipantMap.delete(existingParticipant.participant.name);
+        if (existingParticipant.participant.name) {
+          this.nameParticipantMap.delete(existingParticipant.participant.name);
+        }
         this.internalParticipantMap.delete(existingParticipant);
         participants = participants.filter((p) => p !== existingParticipant);
         this.channelLogger?.log(
@@ -215,7 +230,7 @@ function createParticipant(
   existingIds.add(resource.id);
 
   const internalParticipant: InternalParticipant = {
-    name: resource.participant.name,
+    name: resource.participant.name ?? '',
     ids: existingIds,
     mediaEntries: mediaEntriesDelegate,
   };

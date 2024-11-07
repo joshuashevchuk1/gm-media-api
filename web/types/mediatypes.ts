@@ -41,6 +41,8 @@ export interface MediaEntry {
   readonly mediaLayout: Subscribable<MediaLayout | undefined>;
   readonly videoMeetStreamTrack: Subscribable<MeetStreamTrack | undefined>;
   readonly audioMeetStreamTrack: Subscribable<MeetStreamTrack | undefined>;
+  sessionName?: string;
+  session?: string;
 }
 
 /**
@@ -61,7 +63,15 @@ export interface Participant {
 export interface BaseParticipant {
   // Resource name of the participant.
   // Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
-  readonly name: string;
+  name?: string;
+  // Participant key of associated participant. The user must construct the
+  // resource name from this field to create an Meet API reference.
+  // Format is `participants/{participant}`
+  // You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
+  // and use the conference record to construct the participant name in the
+  // format of
+  // `conferenceRecords/{conference_record}/participants/{participant}`
+  participantKey?: string;
   signedInUser?: SignedInUser;
   anonymousUser?: AnonymousUser;
   phoneUser?: PhoneUser;

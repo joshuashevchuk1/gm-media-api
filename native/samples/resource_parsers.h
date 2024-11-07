@@ -84,7 +84,13 @@ inline std::string ParticipantsStringify(ParticipantsChannelToClient& update) {
       if (resource.participant.has_value()) {
         nlohmann::basic_json<> participant;
         participant["participantId"] = resource.participant->participant_id;
-        participant["name"] = resource.participant->name;
+        if (resource.participant->name.has_value()) {
+          participant["name"] = resource.participant->name.value();
+        }
+        if (resource.participant->participant_key.has_value()) {
+          participant["participantKey"] =
+              resource.participant->participant_key.value();
+        }
         switch (resource.participant->type) {
           case Participant::Type::kSignedInUser:
             participant["signedInUser"] = nlohmann::json::value_t::object;
@@ -137,8 +143,21 @@ inline std::string MediaEntriesStringify(MediaEntriesChannelToClient& update) {
       resource_snapshot["id"] = resource.id;
       if (resource.media_entry.has_value()) {
         nlohmann::basic_json<> media_entry;
-        media_entry["participantName"] = resource.media_entry->participant_name;
-        media_entry["sessionName"] = resource.media_entry->session_name;
+        if (resource.media_entry->participant.has_value()) {
+          media_entry["participant"] =
+              resource.media_entry->participant.value();
+        }
+        if (resource.media_entry->participant_key.has_value()) {
+          media_entry["participantKey"] =
+              resource.media_entry->participant_key.value();
+        }
+        if (resource.media_entry->session.has_value()) {
+          media_entry["session"] = resource.media_entry->session.value();
+        }
+        if (resource.media_entry->session_name.has_value()) {
+          media_entry["sessionName"] =
+              resource.media_entry->session_name.value();
+        }
         media_entry["audioCsrc"] = resource.media_entry->audio_csrc;
         media_entry["videoCsrcs"] = resource.media_entry->video_csrcs;
         media_entry["presenter"] = resource.media_entry->presenter;

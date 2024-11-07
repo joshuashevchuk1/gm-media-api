@@ -57,9 +57,29 @@ struct Participant {
   // Will eventually be deprecated in favor of `name`.
   int32_t participant_id;
 
-  // Resource name for a participant. Interoperable with the Meet REST API.
-  // Format: `conferenceRecords/{conference_record}/participants/{name}`.
-  std::string name;
+  // Participant resource name, not display name. There is a many
+  // (participant) to one (media entry) relationship.
+  // See
+  // https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
+  // for more info.
+  //
+  // Format is
+  // `conferenceRecords/{conference_record}/participants/{participant}`. Use
+  // this to correlate with other media entries produced by the same
+  // participant. For example, a participant with multiple devices active in the
+  // same meeting. Unused for now.
+  std::optional<std::string> name;
+
+  // Participant key of associated participant. The user must construct the
+  // resource name from this field to create a Meet API reference.
+  //
+  // Format is`participants/{participant}`
+  //
+  // You can retrieve the conference record from
+  // https://developers.google.com/meet/api/guides/conferences and use the
+  // conference record to construct the participant name in the format of
+  // `conferenceRecords/{conference_record}/participants/{participant}`
+  std::optional<std::string> participant_key;
   // The type of participant.
   //
   // This is used to determine which of the following fields are populated.
