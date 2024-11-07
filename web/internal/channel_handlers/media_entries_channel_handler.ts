@@ -288,14 +288,18 @@ export class MediaEntriesChannelHandler {
               new Set([resource.mediaEntry.participantId])
             : new Set();
           const internalParticipant: InternalParticipant = {
-            name: resource.mediaEntry.participant,
+            name: resource.mediaEntry.participant ?? '',
             ids,
             mediaEntries: subscribableDelegate,
           };
-          this.nameParticipantMap.set(
-            resource.mediaEntry.participant,
-            newParticipant,
-          );
+
+          if (resource.mediaEntry.participant) {
+            this.nameParticipantMap.set(
+              resource.mediaEntry.participant,
+              newParticipant,
+            );
+          }
+
           this.internalParticipantMap.set(newParticipant, internalParticipant);
           // TODO: Use participant resource name instead of id.
           // tslint:disable-next-line:deprecation
