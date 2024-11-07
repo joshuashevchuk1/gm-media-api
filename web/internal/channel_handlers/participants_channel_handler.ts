@@ -139,6 +139,14 @@ export class ParticipantsChannelHandler {
         existingParticipant = this.nameParticipantMap.get(
           resource.participant.name,
         );
+      } else if (resource.participant.participantKey) {
+        existingParticipant = Array.from(
+          this.internalParticipantMap.entries(),
+        ).find(
+          ([participant, _]) =>
+            participant.participant.participantKey ===
+            resource.participant.participantKey,
+        )?.[0];
       }
 
       if (existingParticipant) {

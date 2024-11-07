@@ -253,72 +253,86 @@ export class MediaEntriesChannelHandler {
       }
 
       // Assign participant to media entry
+      let existingParticipant: Participant | undefined;
       if (resource.mediaEntry.participant) {
-        const existingParticipant = this.nameParticipantMap.get(
+        existingParticipant = this.nameParticipantMap.get(
           resource.mediaEntry.participant,
         );
-        if (existingParticipant) {
-          const internalParticipant =
-            this.internalParticipantMap.get(existingParticipant);
-          if (internalParticipant) {
-            const newMediaEntries: MediaEntry[] = [
-              ...internalParticipant.mediaEntries.get(),
-              mediaEntry!,
-            ];
-            internalParticipant.mediaEntries.set(newMediaEntries);
-          }
-          internalMediaEntry!.participant.set(existingParticipant);
-        } else {
-          // This is unexpected behavior, but technically possible.
-          this.channelLogger?.log(
-            LogLevel.ERRORS,
-            'Media entries channel: participant not found in name participant map' +
-              ' creating participant',
-          );
-          const subscribableDelegate = new SubscribableDelegate<MediaEntry[]>([
+      } else if (resource.mediaEntry.participantKey) {
+        existingParticipant = Array.from(
+          this.internalParticipantMap.entries(),
+        ).find(
+          ([participant, _]) =>
+            participant.participant.participantKey ===
+            resource.mediaEntry.participantKey,
+        )?.[0];
+      }
+
+      if (existingParticipant) {
+        const internalParticipant =
+          this.internalParticipantMap.get(existingParticipant);
+        if (internalParticipant) {
+          const newMediaEntries: MediaEntry[] = [
+            ...internalParticipant.mediaEntries.get(),
             mediaEntry!,
-          ]);
-          const newParticipant: Participant = {
-            participant: {
-              name: resource.mediaEntry.participant,
-              anonymousUser: {},
-            },
-            mediaEntries: subscribableDelegate.getSubscribable(),
-          };
-          // TODO: Use participant resource name instead of id.
-          // tslint:disable-next-line:deprecation
-          const ids: Set<number> = resource.mediaEntry.participantId
-            ? // tslint:disable-next-line:deprecation
-              new Set([resource.mediaEntry.participantId])
-            : new Set();
-          const internalParticipant: InternalParticipant = {
-            name: resource.mediaEntry.participant ?? '',
-            ids,
-            mediaEntries: subscribableDelegate,
-          };
-
-          if (resource.mediaEntry.participant) {
-            this.nameParticipantMap.set(
-              resource.mediaEntry.participant,
-              newParticipant,
-            );
-          }
-
-          this.internalParticipantMap.set(newParticipant, internalParticipant);
-          // TODO: Use participant resource name instead of id.
-          // tslint:disable-next-line:deprecation
-          if (resource.mediaEntry.participantId) {
-            this.idParticipantMap.set(
-              // TODO: Use participant resource name instead of id.
-              // tslint:disable-next-line:deprecation
-              resource.mediaEntry.participantId,
-              newParticipant,
-            );
-          }
-          const participantArray = this.participantsDelegate.get();
-          this.participantsDelegate.set([...participantArray, newParticipant]);
-          internalMediaEntry!.participant.set(newParticipant);
+          ];
+          internalParticipant.mediaEntries.set(newMediaEntries);
         }
+        internalMediaEntry!.participant.set(existingParticipant);
+      } else if (
+        resource.mediaEntry.participant ||
+        resource.mediaEntry.participantKey
+      ) {
+        // This is unexpected behavior, but technically possible. We expect
+        // that the participants are received from the participants channel
+        // before the media entries channel but this is not guaranteed.
+        this.channelLogger?.log(
+          LogLevel.ERRORS,
+          'Media entries channel: participant not found in name participant map' +
+            ' creating participant',
+        );
+        const subscribableDelegate = new SubscribableDelegate<MediaEntry[]>([
+          mediaEntry!,
+        ]);
+        const newParticipant: Participant = {
+          participant: {
+            name: resource.mediaEntry.participant,
+            anonymousUser: {},
+            participantKey: resource.mediaEntry.participantKey,
+          },
+          mediaEntries: subscribableDelegate.getSubscribable(),
+        };
+        // TODO: Use participant resource name instead of id.
+        // tslint:disable-next-line:deprecation
+        const ids: Set<number> = resource.mediaEntry.participantId
+          ? // tslint:disable-next-line:deprecation
+            new Set([resource.mediaEntry.participantId])
+          : new Set();
+        const internalParticipant: InternalParticipant = {
+          name: resource.mediaEntry.participant ?? '',
+          ids,
+          mediaEntries: subscribableDelegate,
+        };
+        if (resource.mediaEntry.participant) {
+          this.nameParticipantMap.set(
+            resource.mediaEntry.participant,
+            newParticipant,
+          );
+        }
+        this.internalParticipantMap.set(newParticipant, internalParticipant);
+        // TODO: Use participant resource name instead of id.
+        // tslint:disable-next-line:deprecation
+        if (resource.mediaEntry.participantId) {
+          this.idParticipantMap.set(
+            // TODO: Use participant resource name instead of id.
+            // tslint:disable-next-line:deprecation
+            resource.mediaEntry.participantId,
+            newParticipant,
+          );
+        }
+        const participantArray = this.participantsDelegate.get();
+        this.participantsDelegate.set([...participantArray, newParticipant]);
+        internalMediaEntry!.participant.set(newParticipant);
       }
     });
 
