@@ -181,6 +181,8 @@ export class MediaEntriesChannelHandler {
       if (this.idMediaEntryMap.has(resource.id!)) {
         // Update media entry if it already exists.
         mediaEntry = this.idMediaEntryMap.get(resource.id!);
+        mediaEntry!.sessionName = resource.mediaEntry.sessionName;
+        mediaEntry!.session = resource.mediaEntry.session;
         internalMediaEntry = this.internalMediaEntryMap.get(mediaEntry!);
         internalMediaEntry!.audioMuted.set(resource.mediaEntry.audioMuted);
         internalMediaEntry!.videoMuted.set(resource.mediaEntry.videoMuted);
@@ -196,6 +198,8 @@ export class MediaEntriesChannelHandler {
           id: resource.id!,
           audioCsrc: resource.mediaEntry.audioCsrc,
           videoCsrc,
+          sessionName: resource.mediaEntry.sessionName,
+          session: resource.mediaEntry.session,
         });
         internalMediaEntry = mediaEntryElement.internalMediaEntry;
         mediaEntry = mediaEntryElement.mediaEntry;

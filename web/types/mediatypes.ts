@@ -41,6 +41,8 @@ export interface MediaEntry {
   readonly mediaLayout: Subscribable<MediaLayout | undefined>;
   readonly videoMeetStreamTrack: Subscribable<MeetStreamTrack | undefined>;
   readonly audioMeetStreamTrack: Subscribable<MeetStreamTrack | undefined>;
+  sessionName?: string;
+  session?: string;
 }
 
 /**
