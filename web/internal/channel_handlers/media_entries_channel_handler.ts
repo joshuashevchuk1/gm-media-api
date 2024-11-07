@@ -287,7 +287,7 @@ export class MediaEntriesChannelHandler {
         // that the participants are received from the participants channel
         // before the media entries channel but this is not guaranteed.
         this.channelLogger?.log(
-          LogLevel.ERRORS,
+          LogLevel.RESOURCES,
           'Media entries channel: participant not found in name participant map' +
             ' creating participant',
         );
