@@ -383,9 +383,12 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
         new DefaultCommunicationProtocolImpl(this.requiredConfiguration);
       response = await protocol.connectActiveConference(pcOffer.sdp ?? '');
     } catch (e) {
-      // TODO: Handle specific errors such as 403 not found,
-      // Meeting is a CSE, etc.
-      throw e;
+      throw new Error(
+        'Internal error, call to connectActiveConference failed, Exception: ' +
+          (e as Error).name +
+          ' ' +
+          (e as Error).message,
+      );
     }
     if (response?.answer) {
       await this.peerConnection.setRemoteDescription({
