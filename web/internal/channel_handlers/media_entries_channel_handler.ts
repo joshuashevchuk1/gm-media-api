@@ -236,6 +236,7 @@ export class MediaEntriesChannelHandler {
             for (const contributingSource of contributingSources) {
               if (contributingSource.source === internalMediaEntry!.audioCsrc) {
                 internalMediaEntry!.audioMeetStreamTrack.set(meetStreamTrack);
+                internalMeetStreamTrack.mediaEntry.set(mediaEntry!);
                 // If Video stream is already assigned correctly, break.
                 if (
                   this.isVideoMeetStreamTrackAssignedToMediaEntry(
@@ -247,6 +248,7 @@ export class MediaEntriesChannelHandler {
               }
               if (contributingSource.source === internalMediaEntry!.videoCsrc) {
                 internalMediaEntry!.videoMeetStreamTrack.set(meetStreamTrack);
+                internalMeetStreamTrack.mediaEntry.set(mediaEntry!);
                 // If Audio stream is already assigned correctly, break.
                 if (
                   this.isAudioMeetStreamTrackAssignedToMediaEntry(
