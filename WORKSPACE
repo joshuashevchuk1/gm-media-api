@@ -63,6 +63,7 @@ yarn_install(
 
 http_archive(
     name = "com_google_absl",
+    integrity = "sha256-9Q5awxGoE4Laf6dblzEOS5AGR0+VYKxG9UqZZ/B9SuM=",
     strip_prefix = "abseil-cpp-20240722.0",
     urls = [
         "https://github.com/abseil/abseil-cpp/archive/refs/tags/20240722.0.tar.gz",
@@ -91,6 +92,7 @@ http_archive(
 
 http_archive(
     name = "nlohmann_json",
+    integrity = "sha256-DY71r3+XlOMmNIAZPEkVSbK6bMdLsBiQYgKtpJinlAY=",
     strip_prefix = "json-3.11.3",
     url = "https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz",
 )
