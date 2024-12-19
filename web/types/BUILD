@@ -34,3 +34,8 @@ ts_library(
     name = "data_channels",
     srcs = ["datachannels.ts"],
 )
+
+ts_library(
+    name = "mediacapture_transform",
+    srcs = ["mediacapture_transform.d.ts"],
+)

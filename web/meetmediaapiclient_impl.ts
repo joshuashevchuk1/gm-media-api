@@ -25,6 +25,7 @@ import {
   MediaApiCommunicationResponse,
 } from './internal/communication_protocols/communication_protocol';
 import {DefaultCommunicationProtocolImpl} from './internal/communication_protocols/default_communication_protocol_impl';
+import {InternalMeetStreamTrackImpl} from './internal/internal_meet_stream_track_impl';
 import {
   InternalMediaEntry,
   InternalMediaLayout,
@@ -210,11 +211,19 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       mediaStreamTrack,
       mediaEntryDelegate,
     );
-    const newStreamTrackArray = [...meetStreamTracks, meetStreamTrack];
-    this.internalMeetStreamTrackMap.set(meetStreamTrack, {
-      mediaEntry: mediaEntryDelegate,
+
+    const internalMeetStreamTrack = new InternalMeetStreamTrackImpl(
       receiver,
-    });
+      mediaEntryDelegate,
+      meetStreamTrack,
+      this.internalMediaEntryMap,
+    );
+
+    const newStreamTrackArray = [...meetStreamTracks, meetStreamTrack];
+    this.internalMeetStreamTrackMap.set(
+      meetStreamTrack,
+      internalMeetStreamTrack,
+    );
     this.meetStreamTracksDelegate.set(newStreamTrackArray);
   }
 

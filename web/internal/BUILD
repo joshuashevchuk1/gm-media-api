@@ -54,3 +54,14 @@ ts_library(
         "@media_api_samples//web/types:subcribable",
     ],
 )
+
+ts_library(
+    name = "internal_meet_stream_track_impl",
+    srcs = ["internal_meet_stream_track_impl.ts"],
+    deps = [
+        ":internal_types",
+        ":subscribable_impl",
+        "@media_api_samples//web/types:media_types",
+        "@media_api_samples//web/types:mediacapture_transform",
+    ],
+)

@@ -36,6 +36,7 @@ ts_library(
     ],
     deps = [
         ":meetmediaapiclient_interface",
+        "@media_api_samples//web/internal:internal_meet_stream_track_impl",
         "@media_api_samples//web/internal:internal_types",
         "@media_api_samples//web/internal:meet_stream_track_impl",
         "@media_api_samples//web/internal:subscribable_impl",
