@@ -308,6 +308,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
         this.idMediaLayoutMap,
         this.internalMediaLayoutMap,
         this.mediaEntriesDelegate,
+        this.internalMeetStreamTrackMap,
         videoAssignmentChannelLogger,
       );
     }

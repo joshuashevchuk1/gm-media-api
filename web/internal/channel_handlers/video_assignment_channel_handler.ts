@@ -32,8 +32,13 @@ import {
   MediaEntry,
   MediaLayout,
   MediaLayoutRequest,
+  MeetStreamTrack,
 } from '../../types/mediatypes';
-import {InternalMediaEntry, InternalMediaLayout} from '../internal_types';
+import {
+  InternalMediaEntry,
+  InternalMediaLayout,
+  InternalMeetStreamTrack,
+} from '../internal_types';
 import {SubscribableDelegate} from '../subscribable_impl';
 import {createMediaEntry} from '../utils';
 import {ChannelLogger} from './channel_logger';
@@ -69,6 +74,10 @@ export class VideoAssignmentChannelHandler {
       InternalMediaLayout
     >(),
     private readonly mediaEntriesDelegate: SubscribableDelegate<MediaEntry[]>,
+    private readonly internalMeetStreamTrackMap = new Map<
+      MeetStreamTrack,
+      InternalMeetStreamTrack
+    >(),
     private readonly channelLogger?: ChannelLogger,
   ) {
     this.channel.onmessage = (event) => {
@@ -133,34 +142,56 @@ export class VideoAssignmentChannelHandler {
       (canvas: {canvasId: number; ssrc?: number; mediaEntryId: number}) => {
         const mediaLayout = this.idMediaLayoutMap.get(canvas.canvasId);
         // We expect that the media layout is already created.
+        let internalMediaEntry;
         if (mediaLayout) {
-          let mediaEntry = mediaLayout.mediaEntry.get();
+          const assignedMediaEntry = mediaLayout.mediaEntry.get();
+          let mediaEntry;
+          // if association already exists, we need to either update the video
+          // ssrc or remove the association if the ids don't match.
           if (
-            mediaEntry &&
-            this.internalMediaEntryMap.get(mediaEntry)!.id !==
+            assignedMediaEntry &&
+            this.internalMediaEntryMap.get(assignedMediaEntry)?.id ===
               canvas.mediaEntryId
           ) {
-            // If the media entry is already associated with a media layout,
-            // we need to remove that association.
-            const internalMediaEntry =
-              this.internalMediaEntryMap.get(mediaEntry);
-            internalMediaEntry!.mediaLayout.set(undefined);
-            mediaEntry = undefined;
-          }
-
-          if (!mediaEntry) {
-            let newMediaEntry;
-            if (this.idMediaEntryMap.has(canvas.mediaEntryId)) {
-              newMediaEntry = this.idMediaEntryMap.get(canvas.mediaEntryId);
+            // We expect the internal media entry to be already created if the media entry exists.
+            internalMediaEntry =
+              this.internalMediaEntryMap.get(assignedMediaEntry);
+            // If the media canvas is already associated with a media entry, we
+            // need to update the video ssrc.
+            // Expect the media entry to be created, without assertion, TS
+            // complains it can be undefined.
+            // tslint:disable:no-unnecessary-type-assertion
+            internalMediaEntry!.videoSsrc = canvas.ssrc;
+            mediaEntry = assignedMediaEntry;
+          } else {
+            // If asssocation does not exist, we will attempt to retreive the
+            // media entry from the map.
+            const existingMediaEntry = this.idMediaEntryMap.get(
+              canvas.mediaEntryId,
+            );
+            // Clear existing association if it exists.
+            if (assignedMediaEntry) {
+              this.internalMediaEntryMap
+                .get(assignedMediaEntry)
+                ?.mediaLayout.set(undefined);
+              this.internalMediaLayoutMap
+                .get(mediaLayout)
+                ?.mediaEntry.set(undefined);
+            }
+            if (existingMediaEntry) {
+              // If the media entry exists, need to create the media canvas association.
+              internalMediaEntry =
+                this.internalMediaEntryMap.get(existingMediaEntry);
+              internalMediaEntry!.videoSsrc = canvas.ssrc;
+              internalMediaEntry!.mediaLayout.set(mediaLayout);
+              mediaEntry = existingMediaEntry;
             } else {
+              // If the media entry doewsn't exist, we need to create it and
+              // then create the media canvas association.
               // We don't expect to hit this expression, but since data channels
               // don't guarantee order, we do this to be safe.
               const mediaEntryElement = createMediaEntry({
                 id: canvas.mediaEntryId,
-                audioMuted: false,
-                videoMuted: false,
-                screenShare: false,
-                isPresenter: false,
                 mediaLayout,
                 videoSsrc: canvas.ssrc,
               });
@@ -168,25 +199,34 @@ export class VideoAssignmentChannelHandler {
                 mediaEntryElement.mediaEntry,
                 mediaEntryElement.internalMediaEntry,
               );
-              newMediaEntry = mediaEntryElement.mediaEntry;
+              internalMediaEntry = mediaEntryElement.internalMediaEntry;
+              const newMediaEntry = mediaEntryElement.mediaEntry;
               this.idMediaEntryMap.set(canvas.mediaEntryId, newMediaEntry);
               const newMediaEntries = [
                 ...this.mediaEntriesDelegate.get(),
                 newMediaEntry,
               ];
               this.mediaEntriesDelegate.set(newMediaEntries);
+              mediaEntry = newMediaEntry;
             }
             this.internalMediaLayoutMap
               .get(mediaLayout)
-              ?.mediaEntry.set(newMediaEntry);
+              ?.mediaEntry.set(mediaEntry);
             this.internalMediaEntryMap
-              // We expect the media entry to be created, without assertion, TS
-              // complains it can be undefined.
-              // tslint:disable-next-line:no-unnecessary-type-assertion
-              .get(newMediaEntry!)
+
+              .get(mediaEntry!)
               ?.mediaLayout.set(mediaLayout);
           }
+          if (
+            !this.isMediaEntryAssignedToMeetStreamTrack(
+              mediaEntry!,
+              internalMediaEntry!,
+            )
+          ) {
+            this.assignVideoMeetStreamTrack(mediaEntry!);
+          }
         }
+        // tslint:enable:no-unnecessary-type-assertion
         this.channelLogger?.log(
           LogLevel.ERRORS,
           'Video assignment channel: server sent a canvas that was not created by the client',
@@ -242,5 +282,37 @@ export class VideoAssignmentChannelHandler {
       this.pendingRequestResolveMap.set(request.requestId, resolve);
     });
     return requestPromise;
+  }
+
+  private isMediaEntryAssignedToMeetStreamTrack(
+    mediaEntry: MediaEntry,
+    internalMediaEntry: InternalMediaEntry,
+  ): boolean {
+    const videoMeetStreamTrack = mediaEntry.videoMeetStreamTrack.get();
+    if (!videoMeetStreamTrack) return false;
+    const internalMeetStreamTrack =
+      this.internalMeetStreamTrackMap.get(videoMeetStreamTrack);
+
+    if (internalMeetStreamTrack!.videoSsrc === internalMediaEntry.videoSsrc) {
+      return true;
+    } else {
+      // ssrcs can change, if the video ssrc is not the same, we need to remove
+      // the relationship between the media entry and the meet stream track.
+      internalMediaEntry.videoMeetStreamTrack.set(undefined);
+      internalMeetStreamTrack?.mediaEntry.set(undefined);
+      return false;
+    }
+  }
+
+  private assignVideoMeetStreamTrack(mediaEntry: MediaEntry) {
+    for (const [meetStreamTrack, internalMeetStreamTrack] of this
+      .internalMeetStreamTrackMap) {
+      if (meetStreamTrack.mediaStreamTrack.kind === 'video') {
+        internalMeetStreamTrack.maybeAssignMediaEntryOnFrame(
+          mediaEntry,
+          'video',
+        );
+      }
+    }
   }
 }
