@@ -28,6 +28,7 @@ import {InternalMediaEntry, InternalMeetStreamTrack} from './internal_types';
  */
 export class InternalMeetStreamTrackImpl implements InternalMeetStreamTrack {
   private readonly reader: ReadableStreamDefaultReader;
+  videoSsrc?: number;
 
   constructor(
     readonly receiver: RTCRtpReceiver,
@@ -56,7 +57,7 @@ export class InternalMeetStreamTrackImpl implements InternalMeetStreamTrack {
     // Only want to check the media entry if it has the correct csrc type
     // for this meet stream track.
     if (
-      !this.mediaStreamTrackCrscTypePresent(mediaEntry) ||
+      !this.mediaStreamTrackSrcPresent(mediaEntry) ||
       this.meetStreamTrack.mediaStreamTrack.kind !== kind
     ) {
       return;
@@ -68,6 +69,8 @@ export class InternalMeetStreamTrackImpl implements InternalMeetStreamTrack {
       if (frame.done) break;
       if (kind === 'audio') {
         await this.onAudioFrame(mediaEntry);
+      } else if (kind === 'video') {
+        this.onVideoFrame(mediaEntry);
       }
       frame.value.close();
     }
@@ -86,6 +89,20 @@ export class InternalMeetStreamTrackImpl implements InternalMeetStreamTrack {
     }
   }
 
+  private onVideoFrame(mediaEntry: MediaEntry): void {
+    const internalMediaEntry = this.internalMediaEntryMap.get(mediaEntry);
+    const synchronizationSources: RTCRtpSynchronizationSource[] =
+      this.receiver.getSynchronizationSources();
+    for (const syncSource of synchronizationSources) {
+      if (syncSource.source === internalMediaEntry!.videoSsrc) {
+        this.videoSsrc = syncSource.source;
+        internalMediaEntry!.videoMeetStreamTrack.set(this.meetStreamTrack);
+        this.mediaEntry.set(mediaEntry);
+      }
+    }
+    return;
+  }
+
   private mediaEntryTrackAssigned(
     mediaEntry: MediaEntry,
     kind: 'audio' | 'video',
@@ -99,12 +116,12 @@ export class InternalMeetStreamTrackImpl implements InternalMeetStreamTrack {
     return false;
   }
 
-  private mediaStreamTrackCrscTypePresent(mediaEntry: MediaEntry): boolean {
+  private mediaStreamTrackSrcPresent(mediaEntry: MediaEntry): boolean {
     const internalMediaEntry = this.internalMediaEntryMap.get(mediaEntry);
     if (this.meetStreamTrack.mediaStreamTrack.kind === 'audio') {
       return !!internalMediaEntry?.audioCsrc;
     } else if (this.meetStreamTrack.mediaStreamTrack.kind === 'video') {
-      return !!internalMediaEntry?.videoCsrc;
+      return !!internalMediaEntry?.videoSsrc;
     }
     return false;
   }

@@ -68,6 +68,7 @@ export interface InternalMediaLayout {
 export interface InternalMeetStreamTrack {
   readonly mediaEntry: SubscribableDelegate<MediaEntry | undefined>;
   readonly receiver: RTCRtpReceiver;
+  videoSsrc?: number;
   maybeAssignMediaEntryOnFrame: (
     mediaEntry: MediaEntry,
     kind: 'audio' | 'video',
