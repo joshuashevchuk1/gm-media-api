@@ -214,53 +214,11 @@ export class MediaEntriesChannelHandler {
       // Assign meet streams to media entry if they are not already assigned
       // correctly.
       if (
-        !(
-          this.isAudioMeetStreamTrackAssignedToMediaEntry(
-            internalMediaEntry!,
-          ) &&
-          this.isVideoMeetStreamTrackAssignedToMediaEntry(internalMediaEntry!)
-        )
+        !mediaEntry!.audioMuted.get() &&
+        internalMediaEntry!.audioCsrc &&
+        !this.isMediaEntryAssignedToMeetStreamTrack(internalMediaEntry!)
       ) {
-        // TODO : Remove this once we have a better signal.
-        // This is a temporary solution to assign meet stream tracks to media
-        // entries. We are using a timeout here because the contributing sources
-        // are not immediately available after the media entry is created.
-        setTimeout(() => {
-          for (const [
-            meetStreamTrack,
-            internalMeetStreamTrack,
-          ] of this.internalMeetStreamTrackMap.entries()) {
-            const receiver = internalMeetStreamTrack.receiver;
-            const contributingSources: RTCRtpContributingSource[] =
-              receiver.getContributingSources();
-            for (const contributingSource of contributingSources) {
-              if (contributingSource.source === internalMediaEntry!.audioCsrc) {
-                internalMediaEntry!.audioMeetStreamTrack.set(meetStreamTrack);
-                internalMeetStreamTrack.mediaEntry.set(mediaEntry!);
-                // If Video stream is already assigned correctly, break.
-                if (
-                  this.isVideoMeetStreamTrackAssignedToMediaEntry(
-                    internalMediaEntry!,
-                  )
-                ) {
-                  break;
-                }
-              }
-              if (contributingSource.source === internalMediaEntry!.videoCsrc) {
-                internalMediaEntry!.videoMeetStreamTrack.set(meetStreamTrack);
-                internalMeetStreamTrack.mediaEntry.set(mediaEntry!);
-                // If Audio stream is already assigned correctly, break.
-                if (
-                  this.isAudioMeetStreamTrackAssignedToMediaEntry(
-                    internalMediaEntry!,
-                  )
-                ) {
-                  break;
-                }
-              }
-            }
-          }
-        }, 500);
+        this.assignAudioMeetStreamTrack(mediaEntry!, internalMediaEntry!);
       }
 
       // Assign participant to media entry
@@ -357,10 +315,9 @@ export class MediaEntriesChannelHandler {
     }
   }
 
-  private isAudioMeetStreamTrackAssignedToMediaEntry(
+  private isMediaEntryAssignedToMeetStreamTrack(
     internalMediaEntry: InternalMediaEntry,
   ): boolean {
-    if (!internalMediaEntry.audioCsrc) return false;
     const audioStreamTrack = internalMediaEntry.audioMeetStreamTrack.get();
     if (!audioStreamTrack) return false;
     const internalAudioMeetStreamTrack =
@@ -368,40 +325,46 @@ export class MediaEntriesChannelHandler {
     // This is not expected. Map should be comprehensive of all meet stream
     // tracks.
     if (!internalAudioMeetStreamTrack) return false;
+    // The Audio CRSCs changed and therefore need to be checked if the current
+    // audio csrc is in the contributing sources.
     const contributingSources: RTCRtpContributingSource[] =
       internalAudioMeetStreamTrack.receiver.getContributingSources();
 
     for (const contributingSource of contributingSources) {
       if (contributingSource.source === internalMediaEntry.audioCsrc) {
-        // audioCsrc found in contributing sources.
+        // Audio Csrc found in contributing sources.
         return true;
       }
     }
-    // audioCsrc not found in contributing sources.
+    // Audio Csrc not found in contributing sources, unassign audio meet stream
+    // track.
+    internalMediaEntry.audioMeetStreamTrack.set(undefined);
     return false;
   }
 
-  private isVideoMeetStreamTrackAssignedToMediaEntry(
+  private assignAudioMeetStreamTrack(
+    mediaEntry: MediaEntry,
     internalMediaEntry: InternalMediaEntry,
-  ): boolean {
-    if (!internalMediaEntry.videoSsrc) return false;
-    const videoStreamTrack = internalMediaEntry.videoMeetStreamTrack.get();
-    if (!videoStreamTrack) return false;
-    const internalVideoMeetStreamTrack =
-      this.internalMeetStreamTrackMap.get(videoStreamTrack);
-    // This is not expected. Map should be comprehensive of all meet stream
-    // tracks.
-    if (!internalVideoMeetStreamTrack) return false;
-    const contributingSources: RTCRtpContributingSource[] =
-      internalVideoMeetStreamTrack.receiver.getContributingSources();
-
-    for (const contributingSource of contributingSources) {
-      if (contributingSource.source === internalMediaEntry.videoCsrc) {
-        // videoCsrc found in contributing sources.
-        return true;
+  ) {
+    for (const [
+      meetStreamTrack,
+      internalMeetStreamTrack,
+    ] of this.internalMeetStreamTrackMap.entries()) {
+      // Only audio tracks are assigned here.
+      if (meetStreamTrack.mediaStreamTrack.kind !== 'audio') continue;
+      const receiver = internalMeetStreamTrack.receiver;
+      const contributingSources: RTCRtpContributingSource[] =
+        receiver.getContributingSources();
+      for (const contributingSource of contributingSources) {
+        if (contributingSource.source === internalMediaEntry.audioCsrc) {
+          internalMediaEntry.audioMeetStreamTrack.set(meetStreamTrack);
+          internalMeetStreamTrack.mediaEntry.set(mediaEntry);
+          return;
+        }
       }
+      // If Audio Csrc is not found in contributing sources, fall back to
+      // polling frames for assignment.
+      internalMeetStreamTrack.maybeAssignMediaEntryOnFrame(mediaEntry, 'audio');
     }
-    // videoCsrc not found in contributing sources.
-    return false;
   }
 }
