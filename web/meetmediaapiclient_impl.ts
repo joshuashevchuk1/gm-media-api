@@ -39,13 +39,13 @@ import {
 } from './internal/subscribable_impl';
 import {MeetMediaApiClient} from './meetmediaapiclient';
 import {MediaApiResponseStatus} from './types/datachannels';
+import {MeetSessionStatus} from './types/enums';
 import {
   CanvasDimensions,
   MediaEntry,
   MediaLayout,
   MediaLayoutRequest,
   MeetMediaClientRequiredConfiguration,
-  MeetSessionStatus,
   MeetStreamTrack,
   Participant,
 } from './types/mediatypes';

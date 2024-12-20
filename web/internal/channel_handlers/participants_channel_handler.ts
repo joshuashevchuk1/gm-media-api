@@ -23,9 +23,9 @@ import {
   ParticipantResource,
   ParticipantsChannelToClient,
 } from '../../types/datachannels';
+import {LogLevel} from '../../types/enums';
 import {
   Participant as LocalParticipant,
-  LogLevel,
   MediaEntry,
 } from '../../types/mediatypes';
 import {InternalMediaEntry, InternalParticipant} from '../internal_types';

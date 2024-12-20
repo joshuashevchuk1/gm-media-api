@@ -23,7 +23,7 @@ import {
   SessionControlChannelFromClient,
   SessionControlChannelToClient,
 } from '../../types/datachannels';
-import {LogLevel, MeetSessionStatus} from '../../types/mediatypes';
+import {LogLevel, MeetSessionStatus} from '../../types/enums';
 import {SubscribableDelegate} from '../subscribable_impl';
 import {ChannelLogger} from './channel_logger';
 

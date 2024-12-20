@@ -15,7 +15,8 @@
  */
 
 import {MeetMediaApiClientImpl} from '../meetmediaapiclient_impl';
-import {MeetSessionStatus, MeetStreamTrack} from '../types/mediatypes';
+import {MeetSessionStatus} from '../types/enums';
+import {MeetStreamTrack} from '../types/mediatypes';
 
 // Function maps session status to strings. If the session is joined, we go
 // ahead and request a layout.

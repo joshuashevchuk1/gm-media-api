@@ -18,21 +18,27 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "media_types",
-    srcs = ["mediatypes.ts"],
+    srcs = ["mediatypes.d.ts"],
     deps = [
-        ":data_channels",
+        ":datachannels",
+        ":enums",
         ":subcribable",
     ],
 )
 
 ts_library(
     name = "subcribable",
-    srcs = ["subscribable.ts"],
+    srcs = ["subscribable.d.ts"],
 )
 
 ts_library(
-    name = "data_channels",
-    srcs = ["datachannels.ts"],
+    name = "enums",
+    srcs = ["enums.ts"],
+)
+
+ts_library(
+    name = "datachannels",
+    srcs = ["datachannels.d.ts"],
 )
 
 ts_library(

@@ -27,8 +27,8 @@ import {
   VideoAssignmentChannelFromClient,
   VideoAssignmentChannelToClient,
 } from '../../types/datachannels';
+import {LogLevel} from '../../types/enums';
 import {
-  LogLevel,
   MediaEntry,
   MediaLayout,
   MediaLayoutRequest,

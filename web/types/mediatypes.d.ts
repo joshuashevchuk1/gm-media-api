@@ -24,6 +24,7 @@ import {
   MediaApiResponse,
   ResourceSnapshot,
 } from './datachannels';
+import {LogLevel} from './enums';
 import {Subscribable} from './subscribable';
 
 /**
@@ -197,18 +198,6 @@ export type MediaLayoutRequest =
   | {mediaLayout: MediaLayout; mediaEntry?: never; presenter?: never};
 
 /**
- * Enum for the status of the Meet session.
- */
-export enum MeetSessionStatus {
-  NEW = 0 /* Default value */,
-  WAITING = 1,
-  JOINED = 2,
-  DISCONNECTED = 3,
-  KICKED = 4 /* DISCONNECTED with leave request */,
-  REJECTED = 5 /* Error state */,
-}
-
-/**
  * Required configuration for the MeetMediaApiClient.
  */
 export interface MeetMediaClientRequiredConfiguration {
@@ -220,16 +209,6 @@ export interface MeetMediaClientRequiredConfiguration {
   enableAudioStreams: boolean;
   accessToken: string;
   logsCallback?: (logEvent: LogEvent) => void;
-}
-
-/**
- * Log level for each data channel.
- */
-export enum LogLevel {
-  UNKNOWN = 0,
-  ERRORS = 1,
-  RESOURCES = 2,
-  MESSAGES = 3,
 }
 
 /**

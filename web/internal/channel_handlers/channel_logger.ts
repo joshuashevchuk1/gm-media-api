@@ -25,7 +25,8 @@ import {
   MediaApiResponse,
   ResourceSnapshot,
 } from '../../types/datachannels';
-import {LogEvent, LogLevel, LogSourceType} from '../../types/mediatypes';
+import {LogLevel} from '../../types/enums';
+import {LogEvent, LogSourceType} from '../../types/mediatypes';
 
 /**
  * Helper class that helps log channel resources, updates or errors.

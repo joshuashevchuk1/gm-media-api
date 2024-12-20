@@ -27,7 +27,7 @@ import {
   UploadMediaStatsRequest,
   UploadMediaStatsResponse,
 } from '../../types/datachannels';
-import {LogLevel} from '../../types/mediatypes';
+import {LogLevel} from '../../types/enums';
 import {ChannelLogger} from './channel_logger';
 
 type SupportedMediaStatsTypes =

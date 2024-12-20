@@ -20,12 +20,12 @@
 
 import {MediaApiCommunicationProtocol} from './internal/communication_protocols/communication_protocol';
 import {MediaApiResponseStatus} from './types/datachannels';
+import {MeetSessionStatus} from './types/enums';
 import {
   CanvasDimensions,
   MediaEntry,
   MediaLayout,
   MediaLayoutRequest,
-  MeetSessionStatus,
   MeetStreamTrack,
   Participant,
 } from './types/mediatypes';

@@ -23,8 +23,8 @@ import {
   MediaEntriesChannelToClient,
   MediaEntry as MediaEntryResource,
 } from '../../types/datachannels';
+import {LogLevel} from '../../types/enums';
 import {
-  LogLevel,
   MediaEntry,
   MediaLayout,
   MeetStreamTrack,
