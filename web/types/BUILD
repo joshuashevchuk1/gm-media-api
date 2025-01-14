@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//:build_defs.bzl", "ts_library")
+load(
+    "//javascript/typescript:build_defs.bzl",
+    "ts_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
