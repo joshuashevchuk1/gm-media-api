@@ -15,6 +15,32 @@
 package(default_visibility = ["//visibility:private"])
 
 cc_library(
+    name = "conference_data_channel_interface",
+    hdrs = ["conference_data_channel_interface.h"],
+    deps = [
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/status",
+        "@media_api_samples//native_with_state/api:media_api_client_interface",
+    ],
+)
+
+cc_library(
+    name = "conference_data_channel",
+    srcs = ["conference_data_channel.cc"],
+    hdrs = ["conference_data_channel.h"],
+    deps = [
+        ":conference_data_channel_interface",
+        ":resource_handler_interface",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:string_view",
+        "@media_api_samples//native_with_state/api:media_api_client_interface",
+        "@webrtc",
+    ],
+)
+
+cc_library(
     name = "resource_handler_interface",
     hdrs = [
         "resource_handler_interface.h",
