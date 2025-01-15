@@ -61,7 +61,6 @@
 #include <memory>
 #include <variant>
 
-#include "absl/base/nullability.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -269,8 +268,7 @@ class MediaApiClientInterface {
   // destroyed.
   static absl::StatusOr<std::unique_ptr<MediaApiClientInterface>> Create(
       const MediaApiClientConfiguration& api_config,
-      absl::Nonnull<rtc::scoped_refptr<MediaApiClientObserverInterface>>
-          api_session_observer);
+      rtc::scoped_refptr<MediaApiClientObserverInterface> api_session_observer);
 };
 
 }  // namespace meet

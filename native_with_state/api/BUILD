@@ -26,7 +26,6 @@ cc_library(
         ":participants_resource",
         ":session_control_resource",
         ":video_assignment_resource",
-        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
