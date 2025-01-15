@@ -147,24 +147,3 @@ local_repository(
     name = "boringssl",
     path = webrtc_path + "webrtc/third_party/boringssl/src",
 )
-
-# === Python ===
-http_archive(
-    name = "rules_python",
-    sha256 = "be04b635c7be4604be1ef20542e9870af3c49778ce841ee2d92fcb42f9d9516a",
-    strip_prefix = "rules_python-0.35.0",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.35.0/rules_python-0.35.0.tar.gz",
-)
-
-load("@rules_python//python:repositories.bzl", "py_repositories")
-py_repositories()
-
-load("@rules_python//python:pip.bzl", "pip_parse")
-
-pip_parse(
-   name = "util_deps",
-   requirements_lock = "//web/utils:requirements.txt",
-)
-
-load("@util_deps//:requirements.bzl", "install_deps")
-install_deps()
