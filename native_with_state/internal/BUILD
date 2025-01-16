@@ -15,6 +15,89 @@
 package(default_visibility = ["//visibility:private"])
 
 cc_library(
+    name = "http_connector_interface",
+    hdrs = ["http_connector_interface.h"],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+    deps = [
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "curl_connector",
+    srcs = ["curl_connector.cc"],
+    hdrs = ["curl_connector.h"],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+    deps = [
+        ":curl_request",
+        ":http_connector_interface",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "curl_connector_test",
+    srcs = ["curl_connector_test.cc"],
+    deps = [
+        ":curl_connector",
+        ":mock_curl_api_wrapper",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_googletest//:gtest_main",
+        "@curl",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_library(
+    name = "curl_request",
+    srcs = ["curl_request.cc"],
+    hdrs = ["curl_request.h"],
+    visibility = ["@media_api_samples//native:__subpackages__"],
+    deps = [
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@curl",
+    ],
+)
+
+cc_library(
+    name = "mock_curl_api_wrapper",
+    testonly = 1,
+    hdrs = [
+        "testing/mock_curl_api_wrapper.h",
+    ],
+    deps = [
+        ":curl_request",
+        "@com_google_googletest//:gtest",
+        "@curl",
+    ],
+)
+
+cc_test(
+    name = "curl_request_test",
+    srcs = ["curl_request_test.cc"],
+    deps = [
+        ":curl_request",
+        ":mock_curl_api_wrapper",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_googletest//:gtest_main",
+        "@curl",
+    ],
+)
+
+cc_library(
     name = "conference_data_channel_interface",
     hdrs = ["conference_data_channel_interface.h"],
     deps = [
