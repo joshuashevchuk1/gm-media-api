@@ -300,3 +300,17 @@ cc_test(
         "@nlohmann_json//:json",
     ],
 )
+
+cc_library(
+    name = "conference_media_tracks",
+    srcs = ["conference_media_tracks.cc"],
+    hdrs = ["conference_media_tracks.h"],
+    deps = [
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/types:span",
+        "@media_api_samples//native_with_state/api:media_api_client_interface",
+        "@webrtc",
+    ],
+)
