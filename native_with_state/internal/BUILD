@@ -133,6 +133,19 @@ cc_test(
 )
 
 cc_library(
+    name = "stats_request_from_report",
+    srcs = ["stats_request_from_report.cc"],
+    hdrs = ["stats_request_from_report.h"],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@media_api_samples//native_with_state/api:media_stats_resource",
+        "@webrtc",
+    ],
+)
+
+cc_library(
     name = "conference_data_channel_interface",
     hdrs = ["conference_data_channel_interface.h"],
     deps = [
