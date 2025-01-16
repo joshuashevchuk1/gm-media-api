@@ -15,6 +15,41 @@
 package(default_visibility = ["//visibility:private"])
 
 cc_library(
+    name = "conference_peer_connection_interface",
+    hdrs = ["conference_peer_connection_interface.h"],
+    deps = [
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:string_view",
+        "@webrtc",
+    ],
+)
+
+cc_library(
+    name = "conference_peer_connection",
+    srcs = ["conference_peer_connection.cc"],
+    hdrs = ["conference_peer_connection.h"],
+    deps = [
+        ":conference_media_tracks",
+        ":conference_peer_connection_interface",
+        ":http_connector_interface",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/synchronization",
+        "@nlohmann_json//:json",
+        "@webrtc",
+    ],
+)
+
+cc_library(
+    name = "sdp_constants",
+    hdrs = ["testing/sdp_constants.h"],
+)
+
+cc_library(
     name = "http_connector_interface",
     hdrs = ["http_connector_interface.h"],
     visibility = ["@media_api_samples//native:__subpackages__"],
@@ -313,4 +348,9 @@ cc_library(
         "@media_api_samples//native_with_state/api:media_api_client_interface",
         "@webrtc",
     ],
+)
+
+cc_library(
+    name = "testing/sdp_constants",
+    hdrs = ["testing/sdp_constants.h"],
 )
