@@ -40,7 +40,6 @@ cc_library(
     visibility = ["@media_api_samples//native_with_state:__subpackages__"],
     deps = [
         ":media_api_client_interface",
-        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/status:statusor",
         "@webrtc",
     ],

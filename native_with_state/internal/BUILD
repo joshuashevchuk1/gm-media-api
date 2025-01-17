@@ -43,6 +43,34 @@ cc_library(
 )
 
 cc_library(
+    name = "media_api_client_factory",
+    srcs = ["media_api_client_factory.cc"],
+    hdrs = ["media_api_client_factory.h"],
+    visibility = ["@media_api_samples//native_with_state:__subpackages__"],
+    deps = [
+        ":conference_data_channel",
+        ":conference_peer_connection",
+        ":curl_connector",
+        ":curl_request",
+        ":media_api_audio_device_module",
+        ":media_api_client",
+        ":media_entries_resource_handler",
+        ":media_stats_resource_handler",
+        ":participants_resource_handler",
+        ":session_control_resource_handler",
+        ":video_assignment_resource_handler",
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+        "@media_api_samples//native_with_state/api:media_api_client_factory_interface",
+        "@media_api_samples//native_with_state/api:media_api_client_interface",
+        "@webrtc",
+    ],
+)
+
+cc_library(
     name = "variant_utils",
     hdrs = ["variant_utils.h"],
 )

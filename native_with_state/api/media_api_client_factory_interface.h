@@ -19,7 +19,6 @@
 
 #include <memory>
 
-#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "native_with_state/api/media_api_client_interface.h"
 #include "webrtc/api/scoped_refptr.h"
@@ -32,10 +31,9 @@ class MediaApiClientFactoryInterface {
   virtual ~MediaApiClientFactoryInterface() = default;
 
   virtual absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
-  CreateMediaApiClient(
-      const MediaApiClientConfiguration& api_config,
-      absl::Nonnull<rtc::scoped_refptr<MediaApiClientObserverInterface>>
-          api_session_observer) = 0;
+  CreateMediaApiClient(const MediaApiClientConfiguration& api_config,
+                       rtc::scoped_refptr<MediaApiClientObserverInterface>
+                           api_session_observer) = 0;
 };
 
 }  // namespace meet
