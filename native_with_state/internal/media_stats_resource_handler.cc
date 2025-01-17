@@ -74,34 +74,34 @@ absl::StatusOr<ResourceUpdate> MediaStatsResourceHandler::ParseUpdate(
     }
     response.request_id = request_id_field->get<int64_t>();
 
+    // If no status field is present, the status is assumed to be OK.
+    absl::Status status = absl::OkStatus();
     // Response.status
-    const Json* status_field = FindOrNull(*response_field, "status");
-    if (status_field == nullptr) {
-      return absl::InternalError(
-          absl::StrCat("Invalid ", kMediaStatsResourceName,
-                       " json format. Expected non-empty status field"));
-    }
-    absl::StatusCode status_code = absl::StatusCode::kUnknown;
+    if (const Json* status_field = FindOrNull(*response_field, "status");
+        status_field != nullptr) {
+      absl::StatusCode status_code = absl::StatusCode::kUnknown;
 
-    // Response.status.code
-    const Json* code_field = FindOrNull(*status_field, "code");
-    if (code_field == nullptr) {
-      return absl::InternalError(
-          absl::StrCat("Invalid ", kMediaStatsResourceName,
-                       " json format. Expected non-empty code field"));
-    }
-    status_code = static_cast<absl::StatusCode>(code_field->get<int32_t>());
+      // Response.status.code
+      const Json* code_field = FindOrNull(*status_field, "code");
+      if (code_field == nullptr) {
+        return absl::InternalError(
+            absl::StrCat("Invalid ", kMediaStatsResourceName,
+                         " json format. Expected non-empty code field"));
+      }
+      status_code = static_cast<absl::StatusCode>(code_field->get<int32_t>());
 
-    // Response.status.message
-    std::string message;
-    const Json* message_field = FindOrNull(*status_field, "message");
-    if (message_field == nullptr) {
-      return absl::InternalError(
-          absl::StrCat("Invalid ", kMediaStatsResourceName,
-                       " json format. Expected non-empty message field"));
+      // Response.status.message
+      std::string message;
+      const Json* message_field = FindOrNull(*status_field, "message");
+      if (message_field == nullptr) {
+        return absl::InternalError(
+            absl::StrCat("Invalid ", kMediaStatsResourceName,
+                         " json format. Expected non-empty message field"));
+      }
+      message = message_field->get<std::string>();
+      status = absl::Status(status_code, std::move(message));
     }
-    message = message_field->get<std::string>();
-    response.status = absl::Status(status_code, std::move(message));
+    response.status = std::move(status);
 
     // Response.uploadMediaStats
     if (const Json* upload_media_stats_field =

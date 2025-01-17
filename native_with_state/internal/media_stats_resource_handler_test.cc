@@ -299,7 +299,7 @@ TEST(MediaStatsResourceHandlerTest, MissingRequestIdReturnsErrorStatus) {
                 "field"));
 }
 
-TEST(MediaStatsResourceHandlerTest, MissingStatusReturnsErrorStatus) {
+TEST(MediaStatsResourceHandlerTest, MissingStatusReturnsOKStatus) {
   absl::StatusOr<ResourceUpdate> parsed_update =
       MediaStatsResourceHandler().ParseUpdate(R"json({
     "response": {
@@ -307,12 +307,8 @@ TEST(MediaStatsResourceHandlerTest, MissingStatusReturnsErrorStatus) {
       "uploadMediaStats": {}
     }
   })json");
-  ASSERT_FALSE(parsed_update.ok());
-  EXPECT_EQ(parsed_update.status().code(), absl::StatusCode::kInternal);
-  EXPECT_THAT(
-      parsed_update.status().message(),
-      HasSubstr(
-          "Invalid media-stats json format. Expected non-empty status field"));
+  ASSERT_TRUE(parsed_update.ok());
+  EXPECT_TRUE(parsed_update.status().ok());
 }
 
 TEST(MediaStatsResourceHandlerTest, MissingStatusCodeReturnsErrorStatus) {
