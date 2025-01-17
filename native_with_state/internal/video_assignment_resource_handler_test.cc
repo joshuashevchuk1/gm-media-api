@@ -45,7 +45,6 @@ TEST(VideoAssignmentResourceHandlerTest, ParsesResourceSnapshots) {
       handler.ParseUpdate(R"json({
         "resources": [
           {
-            "id": 1234,
             "videoAssignment": {
               "label": "the answer to life is 42",
               "canvases": [
@@ -64,7 +63,6 @@ TEST(VideoAssignmentResourceHandlerTest, ParsesResourceSnapshots) {
       std::move(status_or_parsed_update).value());
 
   ASSERT_THAT(video_assignment_update.resources, SizeIs(1));
-  EXPECT_EQ(video_assignment_update.resources[0].id, 1234);
   EXPECT_EQ(video_assignment_update.resources[0].assignment->label,
             "the answer to life is 42");
   ASSERT_THAT(video_assignment_update.resources[0].assignment->canvases,
@@ -85,7 +83,6 @@ TEST(VideoAssignmentResourceHandlerTest,
       handler.ParseUpdate(R"json({
         "resources": [
           {
-            "id": 1234,
             "videoAssignment": {
               "label": "the answer to life is 42",
               "canvases": [
@@ -132,7 +129,6 @@ TEST(VideoAssignmentResourceHandlerTest, ParsesMultipleResourceSnapshots) {
       handler.ParseUpdate(R"json({
         "resources": [
           {
-            "id": 1234,
             "videoAssignment": {
               "label": "the answer to life is 42",
               "canvases": [
@@ -145,7 +141,6 @@ TEST(VideoAssignmentResourceHandlerTest, ParsesMultipleResourceSnapshots) {
             }
           },
           {
-            "id": 4321,
             "videoAssignment": {
               "label": "schwifty",
               "canvases": [
@@ -164,7 +159,6 @@ TEST(VideoAssignmentResourceHandlerTest, ParsesMultipleResourceSnapshots) {
       std::move(status_or_parsed_update).value());
 
   ASSERT_THAT(video_assignment_update.resources, SizeIs(2));
-  EXPECT_EQ(video_assignment_update.resources[0].id, 1234);
   EXPECT_EQ(video_assignment_update.resources[0].assignment->label,
             "the answer to life is 42");
   ASSERT_THAT(video_assignment_update.resources[0].assignment->canvases,
@@ -176,7 +170,6 @@ TEST(VideoAssignmentResourceHandlerTest, ParsesMultipleResourceSnapshots) {
   EXPECT_EQ(canvas1.ssrc, 424242);
   EXPECT_EQ(canvas1.media_entry_id, 242424);
 
-  EXPECT_EQ(video_assignment_update.resources[1].id, 4321);
   EXPECT_EQ(video_assignment_update.resources[1].assignment->label, "schwifty");
   ASSERT_THAT(video_assignment_update.resources[1].assignment->canvases,
               SizeIs(1));
@@ -195,9 +188,7 @@ TEST(VideoAssignmentResourceHandlerTest,
   absl::StatusOr<ResourceUpdate> status_or_parsed_update =
       handler.ParseUpdate(R"json({
         "resources": [
-          {
-            "id": 1234
-          }
+          {}
         ]
     })json");
   ASSERT_TRUE(status_or_parsed_update.ok());
@@ -273,7 +264,6 @@ TEST(VideoAssignmentResourceHandlerTest,
   absl::StatusOr<ResourceUpdate> parsed_update = handler.ParseUpdate(R"json({
         "resources":
           {
-            "id": 1234,
             "videoAssignment": {
               "label": "the answer to life is 42",
               "canvases": [
@@ -298,7 +288,6 @@ TEST(VideoAssignmentResourceHandlerTest, UnexpectedCanvasesReturnsErrorStatus) {
   absl::StatusOr<ResourceUpdate> parsed_update = handler.ParseUpdate(R"json({
         "resources": [
           {
-            "id": 1234,
             "videoAssignment": {
               "label": "the answer to life is 42",
               "canvases":

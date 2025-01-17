@@ -118,12 +118,6 @@ absl::StatusOr<ResourceUpdate> VideoAssignmentResourceHandler::ParseUpdate(
     for (const Json& resource : *resources_field) {
       VideoAssignmentResourceSnapshot snapshot;
 
-      // Resources.resourceSnapshot.id
-      if (const Json* id_field = FindOrNull(resource, "id");
-          id_field != nullptr) {
-        snapshot.id = id_field->get<int64_t>();
-      }
-
       // Resources.resourceSnapshot.assignment
       if (const Json* assignment_field =
               FindOrNull(resource, "videoAssignment");

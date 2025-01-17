@@ -71,6 +71,8 @@ struct SessionStatus {
 };
 
 struct SessionControlResourceSnapshot {
+  // The session control resource is a singleton resource. Therefore, this ID
+  // is always 0.
   int64_t id;
   SessionStatus session_status;
 };

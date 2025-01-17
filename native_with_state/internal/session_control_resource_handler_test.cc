@@ -45,25 +45,21 @@ TEST(SessionControlResourceHandlerTest, ParsesMultipleResourceSnapshots) {
       handler.ParseUpdate(R"json({
         "resources": [
           {
-            "id": 42,
             "sessionStatus": {
               "connectionState": "STATE_JOINED"
             }
           },
           {
-            "id": 24,
             "sessionStatus": {
               "connectionState": "STATE_DISCONNECTED"
             }
           },
           {
-            "id": 99,
             "sessionStatus": {
               "connectionState": "STATE_WAITING"
             }
           },
           {
-            "id": 199,
             "sessionStatus": {
               "connectionState": "STATE_UNKNOWN"
             }
@@ -75,16 +71,12 @@ TEST(SessionControlResourceHandlerTest, ParsesMultipleResourceSnapshots) {
       std::move(status_or_parsed_update).value());
 
   ASSERT_THAT(session_control_update.resources, SizeIs(4));
-  EXPECT_EQ(session_control_update.resources[0].id, 42);
   EXPECT_EQ(session_control_update.resources[0].session_status.connection_state,
             SessionStatus::ConferenceConnectionState::kJoined);
-  EXPECT_EQ(session_control_update.resources[1].id, 24);
   EXPECT_EQ(session_control_update.resources[1].session_status.connection_state,
             SessionStatus::ConferenceConnectionState::kDisconnected);
-  EXPECT_EQ(session_control_update.resources[2].id, 99);
   EXPECT_EQ(session_control_update.resources[2].session_status.connection_state,
             SessionStatus::ConferenceConnectionState::kWaiting);
-  EXPECT_EQ(session_control_update.resources[3].id, 199);
   EXPECT_EQ(session_control_update.resources[3].session_status.connection_state,
             SessionStatus::ConferenceConnectionState::kUnknown);
 }
@@ -144,7 +136,6 @@ TEST(SessionControlResourceHandlerTest, UnexpectedResourcesReturnsErrorStatus) {
   SessionControlResourceHandler handler;
   absl::StatusOr<ResourceUpdate> parsed_update = handler.ParseUpdate(R"json({
         "resources": {
-          "id": 42,
           "sessionStatus": {
             "connectionState": "STATE_JOINED"
           }
@@ -165,7 +156,6 @@ TEST(SessionControlResourceHandlerTest,
   auto status_or_parsed_update = handler.ParseUpdate(R"json({
         "resources": [
           {
-            "id": 42,
             "sessionStatus": {}
           }
         ]
@@ -177,29 +167,6 @@ TEST(SessionControlResourceHandlerTest,
   ASSERT_THAT(session_control_update.resources, SizeIs(1));
   EXPECT_EQ(session_control_update.resources[0].session_status.connection_state,
             SessionStatus::ConferenceConnectionState::kUnknown);
-}
-
-TEST(SessionControlResourceHandlerTest,
-     NoResourceSnapshotIdPresentIsSingletonResource) {
-  SessionControlResourceHandler handler;
-
-  absl::StatusOr<ResourceUpdate> status_or_parsed_update =
-      handler.ParseUpdate(R"json({
-        "resources": [
-          {
-            "sessionStatus": {
-              "connectionState": "STATE_JOINED"
-            }
-          }
-        ]
-    })json");
-  ASSERT_TRUE(status_or_parsed_update.ok());
-  auto session_control_update = std::get<SessionControlChannelToClient>(
-      std::move(status_or_parsed_update).value());
-
-  ASSERT_THAT(session_control_update.resources, SizeIs(1));
-  // Singleton resources have id value of 0
-  EXPECT_EQ(session_control_update.resources[0].id, 0);
 }
 
 TEST(SessionControlResourceHandlerTest, ParsesClientRequestId) {

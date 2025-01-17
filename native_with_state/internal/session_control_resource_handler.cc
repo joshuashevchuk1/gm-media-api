@@ -126,13 +126,6 @@ absl::StatusOr<ResourceUpdate> SessionControlResourceHandler::ParseUpdate(
       // Resources.resourceSnapshot
       SessionControlResourceSnapshot snapshot;
 
-      if (const Json* id_field = FindOrNull(resource, "id");
-          id_field != nullptr) {
-        snapshot.id = id_field->get<int64_t>();
-      } else {
-        snapshot.id = 0;
-      }
-
       // Resources.resourceSnapshot.sessionStatus
       if (const Json* session_status_field =
               FindOrNull(resource, "sessionStatus");

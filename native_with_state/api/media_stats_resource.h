@@ -65,6 +65,8 @@ struct MediaStatsConfiguration {
 
 // A resource snapshot managed by the server and replicated to the client.
 struct MediaStatsResourceSnapshot {
+  // The media stats resource is a singleton resource. Therefore, this ID is
+  // always 0.
   int64_t id = 0;
   MediaStatsConfiguration configuration;
 };

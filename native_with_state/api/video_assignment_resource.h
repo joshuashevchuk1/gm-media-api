@@ -134,8 +134,8 @@ struct VideoAssignment {
 
 // A resource snapshot managed by the server and replicated to the client.
 struct VideoAssignmentResourceSnapshot {
-  // The resource ID of the resource being updated. For singleton
-  // resources, this is zero.
+  // The video assignment resource is a singleton resource. Therefore, this ID
+  // is always 0.
   int64_t id = 0;
 
   std::optional<VideoAssignment> assignment;
