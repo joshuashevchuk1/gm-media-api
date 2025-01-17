@@ -15,6 +15,39 @@
 package(default_visibility = ["//visibility:private"])
 
 cc_library(
+    name = "media_api_client",
+    srcs = ["media_api_client.cc"],
+    hdrs = ["media_api_client.h"],
+    visibility = ["@media_api_samples//native_with_state:__subpackages__"],
+    deps = [
+        ":conference_data_channel_interface",
+        ":conference_media_tracks",
+        ":conference_peer_connection_interface",
+        ":stats_request_from_report",
+        ":variant_utils",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/synchronization",
+        "@media_api_samples//native_with_state/api:media_api_client_interface",
+        "@media_api_samples//native_with_state/api:media_stats_resource",
+        "@media_api_samples//native_with_state/api:session_control_resource",
+        "@media_api_samples//native_with_state/api:video_assignment_resource",
+        "@webrtc",
+    ],
+)
+
+cc_library(
+    name = "variant_utils",
+    hdrs = ["variant_utils.h"],
+)
+
+cc_library(
     name = "conference_peer_connection_interface",
     hdrs = ["conference_peer_connection_interface.h"],
     deps = [
@@ -366,4 +399,15 @@ cc_library(
 cc_library(
     name = "testing/sdp_constants",
     hdrs = ["testing/sdp_constants.h"],
+)
+
+cc_library(
+    name = "mock_media_api_client_observer",
+    testonly = 1,
+    hdrs = ["testing/mock_media_api_client_observer.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest",
+        "@media_api_samples//native_with_state/api:media_api_client_interface",
+    ],
 )
