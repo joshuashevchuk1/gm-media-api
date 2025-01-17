@@ -48,6 +48,18 @@ cc_library(
 )
 
 cc_library(
+    name = "media_api_audio_device_module",
+    srcs = ["media_api_audio_device_module.cc"],
+    hdrs = ["media_api_audio_device_module.h"],
+    deps = [
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/synchronization",
+        "@webrtc",
+    ],
+)
+
+cc_library(
     name = "conference_peer_connection_interface",
     hdrs = ["conference_peer_connection_interface.h"],
     deps = [
