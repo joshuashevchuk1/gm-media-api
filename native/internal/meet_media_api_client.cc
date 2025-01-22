@@ -179,14 +179,10 @@ MeetMediaApiClientInterface::Create(
 }
 
 MeetMediaApiClientState MeetMediaApiClient::state() const {
-  // TODO: Return the client's state.
   return MeetMediaApiClientState::kReady;
 }
 
 absl::Status MeetMediaApiClient::SendRequest(const ResourceRequest& request) {
-  // TODO: Check if the client is in the correct state to send
-  // requests and return an error if not.
-
   switch (request.hint) {
     case ResourceHint::kSessionControl:
       if (session_control_data_channel_ == nullptr) {
