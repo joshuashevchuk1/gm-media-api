@@ -229,9 +229,12 @@ TEST(MediaApiClientTest, HandlesPeerConnectionDisconnected) {
       });
   auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
   absl::Status client_disconnected_status;
+  absl::Notification client_disconnected_notification;
   EXPECT_CALL(*observer, OnDisconnected)
-      .WillOnce([&client_disconnected_status](absl::Status status) {
+      .WillOnce([&client_disconnected_status,
+                 &client_disconnected_notification](absl::Status status) {
         client_disconnected_status = status;
+        client_disconnected_notification.Notify();
       });
   MediaApiClient client(CreateClientThread(), std::move(observer),
                         std::move(peer_connection),
@@ -240,6 +243,8 @@ TEST(MediaApiClientTest, HandlesPeerConnectionDisconnected) {
   peer_connection_disconnect_callback(
       absl::InternalError("Peer connection disconnected."));
 
+  ASSERT_TRUE(client_disconnected_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
   EXPECT_THAT(
       client_disconnected_status,
       StatusIs(absl::StatusCode::kInternal, "Peer connection disconnected."));
@@ -248,9 +253,12 @@ TEST(MediaApiClientTest, HandlesPeerConnectionDisconnected) {
 TEST(MediaApiClientTest, CallsObserverOnResourceUpdate) {
   auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
   ResourceUpdate received_resource_update;
+  absl::Notification resource_update_notification;
   EXPECT_CALL(*observer, OnResourceUpdate)
-      .WillOnce([&received_resource_update](ResourceUpdate resource_update) {
+      .WillOnce([&received_resource_update, &resource_update_notification](
+                    ResourceUpdate resource_update) {
         received_resource_update = std::move(resource_update);
+        resource_update_notification.Notify();
       });
   auto session_control_data_channel =
       std::make_unique<MockConferenceDataChannel>();
@@ -275,6 +283,8 @@ TEST(MediaApiClientTest, CallsObserverOnResourceUpdate) {
   resource_update_callback(SessionControlChannelToClient{
       .response = SessionControlResponse({.request_id = 7})});
 
+  ASSERT_TRUE(resource_update_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
   ASSERT_TRUE(std::holds_alternative<SessionControlChannelToClient>(
       received_resource_update));
   EXPECT_TRUE(std::get<SessionControlChannelToClient>(received_resource_update)
@@ -328,16 +338,14 @@ TEST(MediaApiClientTest,
                           SessionStatus::ConferenceConnectionState::kJoined}}}};
   resource_update_callback(std::move(session_control_update));
 
-  EXPECT_TRUE(joined_notification.HasBeenNotified());
+  EXPECT_TRUE(
+      joined_notification.WaitForNotificationWithTimeout(absl::Seconds(1)));
 }
 
 TEST(MediaApiClientTest,
      LogsWarningIfReceivingJoinedSessionStatusWhileNotInJoiningState) {
   auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
-  absl::Notification joined_notification;
-  ON_CALL(*observer, OnJoined).WillByDefault([&joined_notification] {
-    joined_notification.Notify();
-  });
+  EXPECT_CALL(*observer, OnJoined).Times(0);
   auto session_control_data_channel =
       std::make_unique<MockConferenceDataChannel>();
   ConferenceDataChannelInterface::ResourceUpdateCallback
@@ -360,10 +368,12 @@ TEST(MediaApiClientTest,
 
   ScopedMockLog log(kDoNotCaptureLogsYet);
   std::string message;
-  // Ignore other warnings.
+  absl::Notification log_notification;
   EXPECT_CALL(log, Log(WARNING, _, _))
-      .WillOnce([&message](int, const std::string&, const std::string& msg) {
+      .WillOnce([&message, &log_notification](int, const std::string&,
+                                              const std::string& msg) {
         message = msg;
+        log_notification.Notify();
       });
   log.StartCapturingLogs();
   SessionControlChannelToClient session_control_update =
@@ -375,6 +385,8 @@ TEST(MediaApiClientTest,
                           SessionStatus::ConferenceConnectionState::kJoined}}}};
   resource_update_callback(std::move(session_control_update));
 
+  ASSERT_TRUE(
+      log_notification.WaitForNotificationWithTimeout(absl::Seconds(1)));
   EXPECT_THAT(message, HasSubstr("Received joined session status while in "
                                  "ready state instead of joining state."));
 }
@@ -382,9 +394,12 @@ TEST(MediaApiClientTest,
 TEST(MediaApiClientTest, DisconnectsAfterReceivingDisconnectedSessionStatus) {
   auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
   absl::Status client_disconnected_status;
+  absl::Notification client_disconnected_notification;
   EXPECT_CALL(*observer, OnDisconnected)
-      .WillOnce([&client_disconnected_status](absl::Status status) {
+      .WillOnce([&client_disconnected_status,
+                 &client_disconnected_notification](absl::Status status) {
         client_disconnected_status = status;
+        client_disconnected_notification.Notify();
       });
   auto session_control_data_channel =
       std::make_unique<MockConferenceDataChannel>();
@@ -415,7 +430,9 @@ TEST(MediaApiClientTest, DisconnectsAfterReceivingDisconnectedSessionStatus) {
                           ConferenceConnectionState::kDisconnected}}}};
   resource_update_callback(std::move(session_control_update));
 
-  // Disconnections triggered session control updates are considered OK.
+  ASSERT_TRUE(client_disconnected_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
+  // Disconnections triggered by session control updates are considered OK.
   EXPECT_TRUE(client_disconnected_status.ok());
 }
 
@@ -443,10 +460,13 @@ TEST(MediaApiClientTest, DisconnectingTwiceLogsWarning) {
 
   ScopedMockLog log(kDoNotCaptureLogsYet);
   std::string message;
+  absl::Notification log_notification;
   // Ignore other warnings.
   EXPECT_CALL(log, Log(WARNING, _, _))
-      .WillOnce([&message](int, const std::string&, const std::string& msg) {
+      .WillOnce([&message, &log_notification](int, const std::string&,
+                                              const std::string& msg) {
         message = msg;
+        log_notification.Notify();
       });
   log.StartCapturingLogs();
   SessionControlChannelToClient session_control_update1 =
@@ -466,6 +486,8 @@ TEST(MediaApiClientTest, DisconnectingTwiceLogsWarning) {
                           ConferenceConnectionState::kDisconnected}}}};
   resource_update_callback(std::move(session_control_update2));
 
+  ASSERT_TRUE(
+      log_notification.WaitForNotificationWithTimeout(absl::Seconds(1)));
   EXPECT_THAT(message, HasSubstr("Client attempted to disconnect with status"));
 }
 
@@ -510,10 +532,16 @@ TEST(MediaApiClientTest, DisconnectingClosesConferencePeerConnection) {
                           ConferenceConnectionState::kDisconnected}}}};
   resource_update_callback(std::move(session_control_update));
 
-  EXPECT_TRUE(close_called_notification.HasBeenNotified());
+  EXPECT_TRUE(close_called_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
 }
 
 TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
+  auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
+  absl::Notification disconnected_notification;
+  EXPECT_CALL(*observer, OnDisconnected).WillOnce([&disconnected_notification] {
+    disconnected_notification.Notify();
+  });
   auto peer_connection = std::make_unique<MockConferencePeerConnection>();
   ON_CALL(*peer_connection, GetStats)
       .WillByDefault([](webrtc::RTCStatsCollectorCallback* callback) {
@@ -553,9 +581,7 @@ TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
             session_control_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(),
-      webrtc::make_ref_counted<MockMediaApiClientObserver>(),
-      std::move(peer_connection),
+      CreateClientThread(), std::move(observer), std::move(peer_connection),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::move(media_stats_data_channel),
@@ -586,6 +612,8 @@ TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
                           ConferenceConnectionState::kDisconnected}}}};
   session_control_update_callback(std::move(session_control_update));
 
+  ASSERT_TRUE(disconnected_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
   ASSERT_EQ(received_requests.size(), 3);
   MediaStatsChannelFromClient request1 =
       std::get<MediaStatsChannelFromClient>(received_requests[0]);
@@ -795,9 +823,12 @@ TEST(MediaApiClientTest, LeaveConferenceSendsLeaveRequest) {
 TEST(MediaApiClientTest, LeaveConferenceDisconnectsClientIfNotJoined) {
   auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
   absl::Status client_disconnect_status;
+  absl::Notification disconnected_notification;
   EXPECT_CALL(*observer, OnDisconnected)
-      .WillOnce([&client_disconnect_status](absl::Status status) {
+      .WillOnce([&client_disconnect_status,
+                 &disconnected_notification](absl::Status status) {
         client_disconnect_status = status;
+        disconnected_notification.Notify();
       });
   auto session_control_data_channel =
       std::make_unique<MockConferenceDataChannel>();
@@ -816,6 +847,8 @@ TEST(MediaApiClientTest, LeaveConferenceDisconnectsClientIfNotJoined) {
 
   absl::Status status = client.LeaveConference(/*request_id=*/123);
 
+  ASSERT_TRUE(disconnected_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
   EXPECT_THAT(
       client_disconnect_status,
       StatusIs(
@@ -827,6 +860,12 @@ TEST(MediaApiClientTest, LeaveConferenceDisconnectsClientIfNotJoined) {
 }
 
 TEST(MediaApiClientTest, LeaveConferenceFailsIfDisconnected) {
+  auto observer = webrtc::make_ref_counted<MockMediaApiClientObserver>();
+  absl::Notification client_disconnected_notification;
+  EXPECT_CALL(*observer, OnDisconnected)
+      .WillOnce([&client_disconnected_notification](absl::Status status) {
+        client_disconnected_notification.Notify();
+      });
   auto session_control_data_channel =
       std::make_unique<MockConferenceDataChannel>();
   ConferenceDataChannelInterface::ResourceUpdateCallback
@@ -843,8 +882,7 @@ TEST(MediaApiClientTest, LeaveConferenceFailsIfDisconnected) {
         return absl::OkStatus();
       });
   MediaApiClient client(
-      CreateClientThread(),
-      webrtc::make_ref_counted<MockMediaApiClientObserver>(),
+      CreateClientThread(), std::move(observer),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
@@ -862,6 +900,8 @@ TEST(MediaApiClientTest, LeaveConferenceFailsIfDisconnected) {
                           ConferenceConnectionState::kDisconnected}}}};
   resource_update_callback(std::move(session_control_update));
 
+  ASSERT_TRUE(client_disconnected_notification.WaitForNotificationWithTimeout(
+      absl::Seconds(1)));
   absl::Status status = client.LeaveConference(/*request_id=*/123);
 
   EXPECT_THAT(status,

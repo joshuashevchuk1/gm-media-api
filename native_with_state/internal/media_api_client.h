@@ -36,6 +36,7 @@
 #include "native_with_state/internal/conference_peer_connection_interface.h"
 #include "webrtc/api/rtp_transceiver_interface.h"
 #include "webrtc/api/scoped_refptr.h"
+#include "webrtc/api/task_queue/pending_task_safety_flag.h"
 #include "webrtc/rtc_base/thread.h"
 
 namespace meet {
@@ -60,6 +61,9 @@ class MediaApiClient : public MediaApiClientInterface {
         observer_(std::move(observer)),
         conference_peer_connection_(std::move(conference_peer_connection)),
         data_channels_(std::move(data_channels)) {
+    alive_flag_ = webrtc::PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
+        /*alive=*/true, client_thread_.get());
+
     conference_peer_connection_->SetDisconnectCallback(
         std::bind_front(&MediaApiClient::MaybeDisconnect, this));
     conference_peer_connection_->SetTrackSignaledCallback(
@@ -78,6 +82,7 @@ class MediaApiClient : public MediaApiClientInterface {
   }
 
   ~MediaApiClient() override {
+    client_thread_->BlockingCall([&]() { alive_flag_->SetNotAlive(); });
     // Close the peer connection to prevent any further callbacks from WebRTC
     // objects. This prevents null dereferences on client objects after the
     // client has started to be destroyed.
@@ -154,6 +159,9 @@ class MediaApiClient : public MediaApiClientInterface {
 
   // Internal thread for client initiated asynchronous behavior.
   std::unique_ptr<rtc::Thread> client_thread_;
+  // Safety flag for ensuring that tasks posted to the client thread are
+  // cancelled when the client is destroyed.
+  rtc::scoped_refptr<webrtc::PendingTaskSafetyFlag> alive_flag_;
   rtc::scoped_refptr<MediaApiClientObserverInterface> observer_;
   std::unique_ptr<ConferencePeerConnectionInterface>
       conference_peer_connection_;

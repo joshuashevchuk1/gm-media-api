@@ -46,6 +46,7 @@
 #include "webrtc/api/scoped_refptr.h"
 #include "webrtc/api/stats/rtc_stats_collector_callback.h"
 #include "webrtc/api/stats/rtc_stats_report.h"
+#include "webrtc/api/task_queue/pending_task_safety_flag.h"
 #include "webrtc/api/units/time_delta.h"
 #include "webrtc/api/video/video_source_interface.h"
 #include "webrtc/rtc_base/thread.h"
@@ -87,7 +88,9 @@ absl::Status MediaApiClient::ConnectActiveConference(
   }
   VLOG(1) << "Client switched to connecting state.";
 
-  client_thread_->PostTask([&, join_endpoint, conference_id, access_token]() {
+  client_thread_->PostTask(SafeTask(alive_flag_, [&, join_endpoint,
+                                                  conference_id,
+                                                  access_token]() {
     absl::Status connect_status = conference_peer_connection_->Connect(
         join_endpoint, conference_id, access_token);
     if (!connect_status.ok()) {
@@ -106,7 +109,7 @@ absl::Status MediaApiClient::ConnectActiveConference(
       state_ = State::kJoining;
     }
     VLOG(1) << "Client switched to joining state.";
-  });
+  }));
 
   return absl::OkStatus();
 };
@@ -281,17 +284,32 @@ void MediaApiClient::HandleResourceUpdate(ResourceUpdate update) {
                      .allowlist = std::move(configuration.allowlist)});
 
     // Move stats collection off of the network thread to the client thread.
-    client_thread_->PostTask([&]() {
+    client_thread_->PostTask(SafeTask(alive_flag_, [&]() {
       // Collect stats regardless of the client's state; if the client is
       // disconnected, stats collection will be a no-op. If the client is not
       // joined into the conference, the server will handle the stats
       // appropriately.
       CollectStats();
-    });
+    }));
   }
 };
 
 void MediaApiClient::MaybeDisconnect(absl::Status status) {
+  // This method closes the peer connection if the client has not already been
+  // disconnected. Closing the peer connection makes a blocking call on the
+  // signaling thread and the network thread. Because disconnection may be
+  // triggered on the networking thread (by receiving a session control update),
+  // this method must be posted to a different thread to avoid deadlocking.
+  //
+  // This has the added benefit of not blocking threads that call into the
+  // client API as well.
+  if (!client_thread_->IsCurrent()) {
+    client_thread_->PostTask(SafeTask(
+        alive_flag_,
+        [this, status = std::move(status)]() { MaybeDisconnect(status); }));
+    return;
+  }
+
   {
     absl::MutexLock lock(&mutex_);
     if (state_ == State::kDisconnected) {
