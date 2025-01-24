@@ -543,6 +543,15 @@ TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
           [&](ConferenceDataChannelInterface::ResourceUpdateCallback callback) {
             resource_update_callback = std::move(callback);
           });
+  ConferenceDataChannelInterface::ResourceUpdateCallback
+      session_control_update_callback;
+  auto session_control_data_channel =
+      std::make_unique<MockConferenceDataChannel>();
+  EXPECT_CALL(*session_control_data_channel, SetCallback)
+      .WillOnce(
+          [&](ConferenceDataChannelInterface::ResourceUpdateCallback callback) {
+            session_control_update_callback = std::move(callback);
+          });
   MediaApiClient client(
       CreateClientThread(),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
@@ -551,7 +560,7 @@ TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::move(media_stats_data_channel),
           .participants = std::make_unique<MockConferenceDataChannel>(),
-          .session_control = std::make_unique<MockConferenceDataChannel>(),
+          .session_control = std::move(session_control_data_channel),
           .video_assignment = std::make_unique<MockConferenceDataChannel>(),
       });
 
@@ -564,10 +573,19 @@ TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
                                  {"lastPacketSentTimestamp",
                                   "lastPacketReceivedTimestamp"}}}}}}};
   resource_update_callback(std::move(media_stats_update));
-
   // The upload interval is 1 second, so wait for 2.5 seconds to ensure that 2
   // periodic requests are sent.
   absl::SleepFor(absl::Seconds(2.5));
+  // Disconnect the client to stop stats collection.
+  SessionControlChannelToClient session_control_update =
+      SessionControlChannelToClient{
+          .resources = std::vector<SessionControlResourceSnapshot>{
+              SessionControlResourceSnapshot{
+                  .session_status = SessionStatus{
+                      .connection_state = SessionStatus::
+                          ConferenceConnectionState::kDisconnected}}}};
+  session_control_update_callback(std::move(session_control_update));
+
   ASSERT_EQ(received_requests.size(), 3);
   MediaStatsChannelFromClient request1 =
       std::get<MediaStatsChannelFromClient>(received_requests[0]);
