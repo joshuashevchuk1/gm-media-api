@@ -33,7 +33,7 @@ export interface Subscribable<T> {
   subscribe(callback: (value: T) => void): () => void;
 
   /**
-   * Removes the callback from the list of subscribers. The orignal call back
+   * Removes the callback from the list of subscribers. The original callback
    * instance must be passed in as an argument.
    * @return true if the callback was removed, false if it was not found.
    */
