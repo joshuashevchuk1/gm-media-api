@@ -29,87 +29,86 @@
 namespace meet {
 
 struct MediaEntry {
-  // Participant resource name, not display name. There is a many
-  // (participant) to one (media entry) relationship.
-  // See
-  // https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
-  // for more info.
-  //
-  // Format is
-  // `conferenceRecords/{conference_record}/participants/{participant}` Use this
-  // to correlate with other media entries produced by the same participant.
-  // For example, a participant with multiple devices active in the same
-  // conference.
-  // Unused for now.
+  /// Participant resource name, not display name. There is a many
+  /// (participant) to one (media entry) relationship.
+  /// See
+  /// https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
+  /// for more info.
+  ///
+  /// Format is
+  /// `conferenceRecords/{conference_record}/participants/{participant}` Use
+  /// this to correlate with other media entries produced by the same
+  /// participant. For example, a participant with multiple devices active in
+  /// the same conference. Unused for now.
   std::optional<std::string> participant;
-  // Participant key of associated participant. The user must construct the
-  // resource name from this field to create a Meet API reference.
-  //
-  // Format is`participants/{participant}`
-  //
-  // You can retrieve the conference record from
-  // https://developers.google.com/meet/api/guides/conferences and use the
-  // conference record to construct the participant name in the format of
-  // `conferenceRecords/{conference_record}/participants/{participant}`
+  /// Participant key of associated participant. The user must construct the
+  /// resource name from this field to create a Meet API reference.
+  ///
+  /// Format is`participants/{participant}`
+  ///
+  /// You can retrieve the conference record from
+  /// https://developers.google.com/meet/api/guides/conferences and use the
+  /// conference record to construct the participant name in the format of
+  /// `conferenceRecords/{conference_record}/participants/{participant}`
   std::optional<std::string> participant_key;
-  // Participant session name. There should be a one to one mapping of session
-  // to Media Entry. See
-  // https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions
-  // for more info.
-  //
-  // Format is
-  // `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
-  // Unused for now.
+  /// Participant session name. There should be a one to one mapping of session
+  /// to Media Entry. See
+  /// https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions
+  /// for more info.
+  ///
+  /// Format is
+  /// `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
+  /// Unused for now.
   std::optional<std::string> session;
-  // The session id of the media entry. The user must construct the
-  // session name from this field to create an Meet API reference.
-  // This can be done by combining the conference record, participant key, and
-  // session id.
-  //
-  // Format is
-  // `participants/{participant}/participantSessions/{participant_session}`
-  //
-  // You can retrieve the conference record from
-  // https://developers.google.com/meet/api/guides/conferences and use the
-  // conference record to construct the participant name in the format of
-  // `conferenceRecords/{conference_record}/participants/{participant}`
+  /// The session id of the media entry. The user must construct the
+  /// session name from this field to create an Meet API reference.
+  /// This can be done by combining the conference record, participant key, and
+  /// session id.
+  ///
+  /// Format is
+  /// `participants/{participant}/participantSessions/{participant_session}`
+  ///
+  /// You can retrieve the conference record from
+  /// https://developers.google.com/meet/api/guides/conferences and use the
+  /// conference record to construct the participant name in the format of
+  /// `conferenceRecords/{conference_record}/participants/{participant}`
   std::optional<std::string> session_name;
-  // The CSRC for any audio stream contributed by this participant. Will be
-  // zero if no stream is provided.
+  /// The CSRC for any audio stream contributed by this participant. Will be
+  /// zero if no stream is provided.
   uint32_t audio_csrc = 0;
-  // The CSRC for any video stream contributed by this participant. Will be
-  // empty if no stream is provided.
+  /// The CSRC for any video stream contributed by this participant. Will be
+  /// empty if no stream is provided.
   std::vector<uint32_t> video_csrcs;
-  // Signals if the current entry is presenting.
+  /// Signals if the current entry is presenting.
   bool presenter = false;
-  // Signals if the current entry is a screenshare.
+  /// Signals if the current entry is a screenshare.
   bool screenshare = false;
-  // Signals if the audio stream is currently muted by the remote participant.
+  /// Signals if the audio stream is currently muted by the remote participant.
   bool audio_muted = false;
-  // Signals if the video stream is currently muted by the remote participant.
+  /// Signals if the video stream is currently muted by the remote participant.
   bool video_muted = false;
 };
 
 struct MediaEntriesResourceSnapshot {
-  // The resource ID of the resource being updated.
+  /// The resource ID of the resource being updated.
   int64_t id = 0;
   std::optional<MediaEntry> media_entry;
 };
 
 struct MediaEntriesDeletedResource {
-  // The resource ID of the resource being deleted.
+  /// The resource ID of the resource being deleted.
   int64_t id = 0;
   std::optional<bool> media_entry;
 };
 
-// The top-level transport container for messages sent from server to
-// client in the "media-entries" data channel.
+/// The top-level transport container for messages sent from server to
+/// client in the "media-entries" data channel.
 struct MediaEntriesChannelToClient {
-  // Resource snapshots. There is no implied order between the snapshots in the
-  // list.
+  /// Resource snapshots. There is no implied order between the snapshots in the
+  /// list.
   std::vector<MediaEntriesResourceSnapshot> resources;
-  // The list of deleted resources. There is no order between the entries in the
-  // list.
+  /// The list of deleted resources. There is no order between the entries in
+  /// the list.
   std::vector<MediaEntriesDeletedResource> deleted_resources;
 };
 

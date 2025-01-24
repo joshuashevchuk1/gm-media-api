@@ -29,10 +29,10 @@
 
 namespace meet {
 
-// Tells the server that the client is about to disconnect.
-//
-// See MeetMediaApiClientInterface `LeaveConference` method for more
-// information.
+/// Tells the server that the client is about to disconnect.
+///
+/// See MeetMediaApiClientInterface `LeaveConference` method for more
+/// information.
 struct LeaveRequest {};
 
 struct SessionControlRequest {
@@ -40,29 +40,29 @@ struct SessionControlRequest {
   std::optional<LeaveRequest> leave_request;
 };
 
-// The top-level transport container for messages sent from client to
-// server in the "session-control" data channel. Any combination of fields may
-// be set, but the message is never empty.
+/// The top-level transport container for messages sent from client to
+/// server in the "session-control" data channel. Any combination of fields may
+/// be set, but the message is never empty.
 struct SessionControlChannelFromClient {
   SessionControlRequest request;
 };
 
-// This is a singleton resource containing the status of the media session.
+/// This is a singleton resource containing the status of the media session.
 struct SessionStatus {
   enum class ConferenceConnectionState {
     kUnknown,
-    // Session is waiting to be admitted into the conference.
-    // The client may never observe this state if it was admitted or rejected
-    // quickly.
+    /// Session is waiting to be admitted into the conference.
+    /// The client may never observe this state if it was admitted or rejected
+    /// quickly.
     kWaiting,
-    // Session has fully joined the conference.
+    /// Session has fully joined the conference.
     kJoined,
-    // Session is not connected to the conference.
-    //
-    // This will be sent from the server when the client is no longer connected
-    // to the conference. This can occur for a variety of reasons, including the
-    // client being kicked from the conference, the client not being admitted
-    // into the conference, or the conference ending.
+    /// Session is not connected to the conference.
+    ///
+    /// This will be sent from the server when the client is no longer connected
+    /// to the conference. This can occur for a variety of reasons, including
+    /// the client being kicked from the conference, the client not being
+    /// admitted into the conference, or the conference ending.
     kDisconnected,
   };
 
@@ -71,26 +71,26 @@ struct SessionStatus {
 };
 
 struct SessionControlResourceSnapshot {
-  // The session control resource is a singleton resource. Therefore, this ID
-  // is always 0.
+  /// The session control resource is a singleton resource. Therefore, this ID
+  /// is always 0.
   int64_t id;
   SessionStatus session_status;
 };
 
 struct LeaveResponse {};
 
-// An optional response from Meet servers to an incoming request.
+/// An optional response from Meet servers to an incoming request.
 struct SessionControlResponse {
   int64_t request_id;
-  // The response status from Meet servers to an incoming request. This should
-  // be used by clients to determine the outcome of the request.
+  /// The response status from Meet servers to an incoming request. This should
+  /// be used by clients to determine the outcome of the request.
   absl::Status status;
   LeaveResponse leave_response;
 };
 
-// The top-level transport container for messages sent from server to
-// client in the "session-control" data channel. Any combination of fields may
-// be set, but the message is never empty.
+/// The top-level transport container for messages sent from server to
+/// client in the "session-control" data channel. Any combination of fields may
+/// be set, but the message is never empty.
 struct SessionControlChannelToClient {
   std::optional<SessionControlResponse> response;
   std::vector<SessionControlResourceSnapshot> resources;

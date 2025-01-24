@@ -25,7 +25,7 @@
 
 namespace meet {
 
-// Interface for instantiating MediaApiClientInterfaces.
+/// Interface for instantiating MediaApiClientInterface.
 class MediaApiClientFactoryInterface {
  public:
   virtual ~MediaApiClientFactoryInterface() = default;

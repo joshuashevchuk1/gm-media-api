@@ -37,83 +37,83 @@ struct MediaStatsResponse {
   struct UploadMediaStatsResponse {};
 
   int64_t request_id = 0;
-  // The response status from Meet servers to an incoming request. This should
-  // be used by clients to determine the outcome of the request.
+  /// The response status from Meet servers to an incoming request. This should
+  /// be used by clients to determine the outcome of the request.
   absl::Status status;
   std::optional<UploadMediaStatsResponse> upload_media_stats;
 };
 
-// The configuration for the media stats upload. This will be sent by the server
-// to the client when the data channel is opened. The client is then expected to
-// start uploading media stats at the specified interval.
-//
-// This configuration is immutable and a singleton and will only be sent once
-// when the data channel is opened.
+/// The configuration for the media stats upload. This will be sent by the
+/// server to the client when the data channel is opened. The client is then
+/// expected to start uploading media stats at the specified interval.
+///
+/// This configuration is immutable and a singleton and will only be sent once
+/// when the data channel is opened.
 struct MediaStatsConfiguration {
-  // The interval between each upload of media stats. If this is zero, the
-  // client should not upload any media stats.
+  /// The interval between each upload of media stats. If this is zero, the
+  /// client should not upload any media stats.
   int32_t upload_interval_seconds = 0;
-  // A map of allowlisted RTCStats sections. The key is the section type, and
-  // the value is a vector of the names of data that are allowlisted for that
-  // section.
-  //
-  // Allowlisted sections and section data are expected to be uploaded by the
-  // client. Other data will be ignored by the server and can be safely
-  // omitted.
+  /// A map of allowlisted RTCStats sections. The key is the section type, and
+  /// the value is a vector of the names of data that are allowlisted for that
+  /// section.
+  ///
+  /// Allowlisted sections and section data are expected to be uploaded by the
+  /// client. Other data will be ignored by the server and can be safely
+  /// omitted.
   absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> allowlist;
 };
 
-// A resource snapshot managed by the server and replicated to the client.
+/// A resource snapshot managed by the server and replicated to the client.
 struct MediaStatsResourceSnapshot {
-  // The media stats resource is a singleton resource. Therefore, this ID is
-  // always 0.
+  /// The media stats resource is a singleton resource. Therefore, this ID is
+  /// always 0.
   int64_t id = 0;
   MediaStatsConfiguration configuration;
 };
 
-// The top-level transport container for messages sent from server to client in
-// the "media-stats" data channel. Any combination of fields may be set, but the
-// message is never empty.
+/// The top-level transport container for messages sent from server to client in
+/// the "media-stats" data channel. Any combination of fields may be set, but
+/// the message is never empty.
 struct MediaStatsChannelToClient {
-  // An optional response to an incoming request.
+  /// An optional response to an incoming request.
   std::optional<MediaStatsResponse> response;
-  // Resource snapshots.
+  /// Resource snapshots.
   std::optional<std::vector<MediaStatsResourceSnapshot>> resources;
 };
 
-// This type represents an RTCStats-derived dictionary described in
-// https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats which is
-// returned by calling `RTCPeerConnection::getStats`.
+/// This type represents an RTCStats-derived dictionary described in
+/// https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats which is
+/// returned by calling `RTCPeerConnection::getStats`.
 struct MediaStatsSection {
-  // The RTCStatsType of the section. E.g. "codec", "candidate-pair", etc.
-  // See: https://www.w3.org/TR/webrtc-stats/#rtcstatstype-str*.
+  /// The RTCStatsType of the section. E.g. "codec", "candidate-pair", etc.
+  /// See: https://www.w3.org/TR/webrtc-stats/#rtcstatstype-str*.
   std::string type;
-  // The WebRTC-generated id of the section.
+  /// The WebRTC-generated id of the section.
   std::string id;
-  // The stats and their values for this section.
-  // https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats.
+  /// The stats and their values for this section.
+  /// https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats.
   absl::flat_hash_map<std::string, std::string> values;
 };
 
-// Uploads media stats from the client to the server. The stats are retrieved
-// from WebRTC by calling `RTCPeerConnection::getStats` and the returned
-// RTCStatsReport can be easily mapped to the sections below.
+/// Uploads media stats from the client to the server. The stats are retrieved
+/// from WebRTC by calling `RTCPeerConnection::getStats` and the returned
+/// RTCStatsReport can be easily mapped to the sections below.
 struct UploadMediaStatsRequest {
-  // Represents the entries in
-  // https://w3c.github.io/webrtc-pc/#dom-rtcstatsreport.
+  /// Represents the entries in
+  /// https://w3c.github.io/webrtc-pc/#dom-rtcstatsreport.
   std::vector<MediaStatsSection> sections;
 };
 
 struct MediaStatsRequest {
-  // A unique client-generated identifier for this request. Different requests
-  // must never have the same request ID.
+  /// A unique client-generated identifier for this request. Different requests
+  /// must never have the same request ID.
   int64_t request_id = 0;
-  // Request payload.
+  /// Request payload.
   std::optional<UploadMediaStatsRequest> upload_media_stats;
 };
 
-// The top-level transport container for messages sent from client to server in
-// the "media-stats" data channel.
+/// The top-level transport container for messages sent from client to server in
+/// the "media-stats" data channel.
 struct MediaStatsChannelFromClient {
   MediaStatsRequest request;
 };
