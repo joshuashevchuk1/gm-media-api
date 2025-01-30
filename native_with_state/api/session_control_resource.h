@@ -23,15 +23,11 @@
 
 #include "absl/status/status.h"
 
-// TODO: Update the docs for all the resource structs in this file
-// and make it clear how resources are used. I.e. what each update is and how a
-// client can/should react to them.
-
 namespace meet {
 
 /// Tells the server that the client is about to disconnect.
 ///
-/// See MeetMediaApiClientInterface `LeaveConference` method for more
+/// See `MeetMediaApiClientInterface::LeaveConference` for more
 /// information.
 struct LeaveRequest {};
 
@@ -41,7 +37,7 @@ struct SessionControlRequest {
 };
 
 /// The top-level transport container for messages sent from client to
-/// server in the "session-control" data channel. Any combination of fields may
+/// server in the `session-control` data channel. Any combination of fields may
 /// be set, but the message is never empty.
 struct SessionControlChannelFromClient {
   SessionControlRequest request;
@@ -89,7 +85,7 @@ struct SessionControlResponse {
 };
 
 /// The top-level transport container for messages sent from server to
-/// client in the "session-control" data channel. Any combination of fields may
+/// client in the `session-control` data channel. Any combination of fields may
 /// be set, but the message is never empty.
 struct SessionControlChannelToClient {
   std::optional<SessionControlResponse> response;

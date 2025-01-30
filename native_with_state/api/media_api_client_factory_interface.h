@@ -25,11 +25,12 @@
 
 namespace meet {
 
-/// Interface for instantiating MediaApiClientInterface.
+/// Interface for instantiating `MediaApiClientInterface`.
 class MediaApiClientFactoryInterface {
  public:
   virtual ~MediaApiClientFactoryInterface() = default;
 
+  /// Creates a `MediaApiClientInterface` instance.
   virtual absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
   CreateMediaApiClient(const MediaApiClientConfiguration& api_config,
                        rtc::scoped_refptr<MediaApiClientObserverInterface>

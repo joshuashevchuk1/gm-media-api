@@ -24,13 +24,21 @@
 
 namespace meet {
 
-/// Signed in user type, always has a unique id and display name.
+/// Signed in user type. Always has a unique ID and display name.
 struct SignedInUser {
-  /// Unique ID for the user. Interoperable with Admin SDK API and People API.
-  /// Format: `users/{user}`
+  /// Unique ID for the user.
+  ///
+  /// **Format:** `users/{user}`
+  ///
+  /// Interoperable with the [Admin SDK
+  /// API](https://developers.google.com/admin-sdk/directory/reference/rest/v1/users)
+  /// and the [People
+  /// API](https://developers.google.com/people/api/rest/v1/people/get).
   std::string user;
-  /// For a personal device, it's the user's first name and last name.
-  /// For a robot account, it's the administrator-specified device name. For
+  /// Display name of the user.
+  ///
+  /// - For a personal device, it's the user's first name and last name.
+  /// - For a robot account, it's the administrator-specified device name. For
   /// example, "Altostrat Room".
   std::string display_name;
 };
@@ -59,26 +67,32 @@ struct Participant {
 
   /// Participant resource name, not display name. There is a many
   /// (participant) to one (media entry) relationship.
-  /// See
-  /// https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
-  /// for more info.
   ///
-  /// Format is
-  /// `conferenceRecords/{conference_record}/participants/{participant}`. Use
-  /// this to correlate with other media entries produced by the same
+  /// **Format:**
+  /// `conferenceRecords/{conference_record}/participants/{participant}`
+  ///
+  /// Usethis to correlate with other media entries produced by the same
   /// participant. For example, a participant with multiple devices active in
-  /// the same conference. Unused for now.
+  /// the same conference.
+  ///
+  /// Unused for now.
+  ///
+  /// @see [Meet REST API:
+  /// conferenceRecords.participants](https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants)
   std::optional<std::string> name;
 
   /// Participant key of associated participant. The user must construct the
   /// resource name from this field to create a Meet API reference.
   ///
-  /// Format is`participants/{participant}`
+  /// **Format:** `participants/{participant}`
   ///
-  /// You can retrieve the conference record from
-  /// https://developers.google.com/meet/api/guides/conferences and use the
-  /// conference record to construct the participant name in the format of
-  /// `conferenceRecords/{conference_record}/participants/{participant}`
+  /// You can retrieve the conference record using [this
+  /// guide](https://developers.google.com/meet/api/guides/conferences) and use
+  /// the conference record to construct the participant name in the format of
+  /// `conferenceRecords/{conference_record}/participants/{participant}`.
+  ///
+  /// @see [Meet REST API: Work with
+  /// conferences](https://developers.google.com/meet/api/guides/conferences)
   std::optional<std::string> participant_key;
   /// The type of participant.
   ///

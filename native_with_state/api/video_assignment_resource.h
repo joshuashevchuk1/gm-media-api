@@ -24,10 +24,6 @@
 
 #include "absl/status/status.h"
 
-// TODO: Update the docs for all the resource structs in this file
-// and make it clear how resources are used. I.e. what each update is and how a
-// client can/should react to them.
-
 namespace meet {
 
 /// Required dimensions of the canvas.
@@ -44,8 +40,8 @@ struct VideoCanvas {
     kDirect,
   };
   /// An identifier for the video canvas.
-  /// This is required and must be unique within the containing LayoutModel.
-  /// Clients should prudently reuse VideoCanvas IDs. This allows the backend
+  /// This is required and must be unique within the containing `LayoutModel`.
+  /// Clients should prudently reuse `VideoCanvas` IDs. This allows the backend
   /// to keep assigning video streams to the same canvas as much as possible.
   int32_t id = 0;
 
@@ -60,8 +56,8 @@ struct VideoCanvas {
 
 struct LayoutModel {
   /// A client-specified identifier for this assignment. The identifier
-  /// will be used to reference a given LayoutModel in subsequent
-  /// VideoAssignment resource update pushed from server -> client.
+  /// will be used to reference a given `LayoutModel` in subsequent
+  /// `VideoAssignment` resource update pushed from server to client.
   std::string label;
 
   /// The canvases that videos are assigned to from each virtual SSRC.
@@ -98,7 +94,7 @@ struct VideoAssignmentRequest {
 };
 
 /// The top-level transport container for messages sent from client to
-/// server in the "video-assignment" data channel.
+/// server in the `video-assignment` data channel.
 struct VideoAssignmentChannelFromClient {
   VideoAssignmentRequest request;
 };
@@ -120,13 +116,13 @@ struct VideoCanvasAssignment {
   /// The virtual video SSRC that the video will be sent over, or zero if
   /// there is no video from the participant.
   uint32_t ssrc = 0;
-  /// The `MediaEntry.id` of the media whose video is being shown.
+  /// ID of the `MediaEntry` of the media whose video is being shown.
   int32_t media_entry_id = 0;
 };
 
 struct VideoAssignment {
-  /// The LayoutModel that this assignment is based on. Taken from the
-  /// LayoutModel.label field.
+  /// The `LayoutModel` that this assignment is based on. Taken from
+  /// `LayoutModel::label`.
   std::string label;
   /// The individual canvas assignments, in no particular order.
   std::vector<VideoCanvasAssignment> canvases;
@@ -142,7 +138,7 @@ struct VideoAssignmentResourceSnapshot {
 };
 
 /// The top-level transport container for messages sent from server to
-/// client in the "video-assignment" data channel. Any combination of fields may
+/// client in the `video-assignment` data channel. Any combination of fields may
 /// be set, but the message is never empty.
 struct VideoAssignmentChannelToClient {
   /// An optional response to a incoming request.

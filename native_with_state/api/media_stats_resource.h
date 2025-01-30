@@ -27,10 +27,6 @@
 #include "absl/status/status.h"
 #include "absl/types/optional.h"
 
-// TODO: Update the docs for all the resource structs in this file
-// and make it clear how resources are used. I.e. what each update is and how a
-// client can/should react to them.
-
 namespace meet {
 
 struct MediaStatsResponse {
@@ -53,13 +49,16 @@ struct MediaStatsConfiguration {
   /// The interval between each upload of media stats. If this is zero, the
   /// client should not upload any media stats.
   int32_t upload_interval_seconds = 0;
-  /// A map of allowlisted RTCStats sections. The key is the section type, and
+  /// A map of allowlisted `RTCStats` sections. The key is the section type, and
   /// the value is a vector of the names of data that are allowlisted for that
   /// section.
   ///
   /// Allowlisted sections and section data are expected to be uploaded by the
   /// client. Other data will be ignored by the server and can be safely
   /// omitted.
+  ///
+  /// @see [WebRTC
+  /// Stats](https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats)
   absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> allowlist;
 };
 
@@ -72,7 +71,7 @@ struct MediaStatsResourceSnapshot {
 };
 
 /// The top-level transport container for messages sent from server to client in
-/// the "media-stats" data channel. Any combination of fields may be set, but
+/// the `media-stats` data channel. Any combination of fields may be set, but
 /// the message is never empty.
 struct MediaStatsChannelToClient {
   /// An optional response to an incoming request.
@@ -81,26 +80,33 @@ struct MediaStatsChannelToClient {
   std::optional<std::vector<MediaStatsResourceSnapshot>> resources;
 };
 
-/// This type represents an RTCStats-derived dictionary described in
-/// https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats which is
-/// returned by calling `RTCPeerConnection::getStats`.
+/// This type represents an `RTCStats`-derived dictionary which is returned by
+/// calling `RTCPeerConnection::getStats`.
+///
+/// @see [WebRTC
+/// Stats](https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats)
 struct MediaStatsSection {
-  /// The RTCStatsType of the section. E.g. "codec", "candidate-pair", etc.
-  /// See: https://www.w3.org/TR/webrtc-stats/#rtcstatstype-str*.
+  /// The
+  /// [RTCStatsType](https://www.w3.org/TR/webrtc-stats/#rtcstatstype-str*) of
+  /// the section.
+  ///
+  /// For example, `codec` or `candidate-pair`.
   std::string type;
-  /// The WebRTC-generated id of the section.
+  /// The WebRTC-generated ID of the section.
   std::string id;
   /// The stats and their values for this section.
-  /// https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats.
+  /// @see [WebRTC
+  /// Stats](https://w3c.github.io/webrtc-pc/#mandatory-to-implement-stats)
   absl::flat_hash_map<std::string, std::string> values;
 };
 
 /// Uploads media stats from the client to the server. The stats are retrieved
 /// from WebRTC by calling `RTCPeerConnection::getStats` and the returned
-/// RTCStatsReport can be easily mapped to the sections below.
+/// [RTCStatsReport](https://w3c.github.io/webrtc-pc/#dom-rtcstatsreport) can
+/// be easily mapped to the sections below.
 struct UploadMediaStatsRequest {
   /// Represents the entries in
-  /// https://w3c.github.io/webrtc-pc/#dom-rtcstatsreport.
+  /// [RTCStatsReport](https://w3c.github.io/webrtc-pc/#dom-rtcstatsreport).
   std::vector<MediaStatsSection> sections;
 };
 
@@ -113,7 +119,7 @@ struct MediaStatsRequest {
 };
 
 /// The top-level transport container for messages sent from client to server in
-/// the "media-stats" data channel.
+/// the `media-stats` data channel.
 struct MediaStatsChannelFromClient {
   MediaStatsRequest request;
 };
