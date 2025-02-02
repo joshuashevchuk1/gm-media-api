@@ -121,6 +121,7 @@ struct AudioFrame {
   int sample_rate;
   size_t number_of_channels;
   size_t number_of_frames;
+  bool is_from_loudest_speaker;
   /// Contributing source (CSRC) of the current audio frame. This ID is used to
   /// identify which participant in the conference generated the frame.
   /// Integrators can cross reference this value with values pushed from Meet

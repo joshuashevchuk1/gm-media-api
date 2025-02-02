@@ -40,19 +40,32 @@ void ConferenceAudioTrack::OnData(
                << ". Expected 16.";
     return;
   }
+
   // Audio data is expected to be in PCM format, where each sample is 16 bits.
   const auto* pcm_data = reinterpret_cast<const int16_t*>(audio_data);
 
+  bool is_from_loudest_speaker = false;
   std::optional<uint32_t> csrc;
   std::optional<uint32_t> ssrc;
   // Audio csrcs and ssrcs are not included in the audio data. Therefore,
   // extract them from the RtpReceiver.
   for (const auto& rtp_source : receiver_->GetSources()) {
-    // It is expected that there will be only one CSRC and SSRC per audio frame.
+    // It is expected that there may be 1 or 2 contributing sources. The
+    // contributing source corresponding to the participant's audio stream will
+    // always be present. Meet may also send a contributing source with value
+    // `kLoudestSpeakerCsrc` to indicate that this audio stream is from the
+    // loudest speaker.
+    //
+    // Knowing the loudest speaker can be useful, as it can be used to determine
+    // which participant to prioritize when rendering audio or video (although
+    // other methods may be used as well).
     if (rtp_source.source_type() == webrtc::RtpSourceType::CSRC) {
-      csrc = rtp_source.source_id();
-    }
-    if (rtp_source.source_type() == webrtc::RtpSourceType::SSRC) {
+      if (rtp_source.source_id() == kLoudestSpeakerCsrc) {
+        is_from_loudest_speaker = true;
+      } else {
+        csrc = rtp_source.source_id();
+      }
+    } else if (rtp_source.source_type() == webrtc::RtpSourceType::SSRC) {
       ssrc = rtp_source.source_id();
     }
   }
@@ -67,11 +80,6 @@ void ConferenceAudioTrack::OnData(
     return;
   }
 
-  if (*csrc == kLoudestSpeakerCsrc) {
-    LOG(INFO) << "Ignoring loudest speaker indicator for mid: " << mid_;
-    return;
-  }
-
   // Audio data in PCM format is expected to be stored in a contiguous buffer,
   // where there are `number_of_channels * number_of_frames` audio frames.
   absl::Span<const int16_t> pcm_data_span =
@@ -81,6 +89,7 @@ void ConferenceAudioTrack::OnData(
                        .sample_rate = sample_rate,
                        .number_of_channels = number_of_channels,
                        .number_of_frames = number_of_frames,
+                       .is_from_loudest_speaker = is_from_loudest_speaker,
                        .contributing_source = csrc.value(),
                        .synchronization_source = ssrc.value()});
 };

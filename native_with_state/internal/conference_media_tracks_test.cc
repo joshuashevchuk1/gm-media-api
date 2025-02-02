@@ -27,7 +27,6 @@
 #include "testing/base/public/mock-log.h"
 #include "absl/base/log_severity.h"
 #include "native_with_state/api/media_api_client_interface.h"
-#include "webrtc/api/rtp_headers.h"
 #include "webrtc/api/rtp_packet_info.h"
 #include "webrtc/api/rtp_packet_infos.h"
 #include "webrtc/api/scoped_refptr.h"
@@ -41,7 +40,6 @@ namespace meet {
 namespace {
 
 using ::base_logging::ERROR;
-using ::base_logging::INFO;
 using ::testing::_;
 using ::testing::kDoNotCaptureLogsYet;
 using ::testing::MockFunction;
@@ -50,23 +48,71 @@ using ::testing::ScopedMockLog;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
-TEST(ConferenceAudioTrackTest, CallsObserverWithAudioFrame) {
-  auto mock_receiver = rtc::scoped_refptr<webrtc::MockRtpReceiver>(
+TEST(ConferenceAudioTrackTest, CallsObserverWithAudioFrameFromLoudestSpeaker) {
+  rtc::scoped_refptr<webrtc::MockRtpReceiver> mock_receiver(
       new webrtc::MockRtpReceiver());
   webrtc::RtpSource csrc_rtp_source(
       webrtc::Timestamp::Micros(1234567890),
       /*source_id=*/123, webrtc::RtpSourceType::CSRC,
       /*rtp_timestamp=*/1111111,
-      {.audio_level = 100,
-       .absolute_capture_time =
-           webrtc::AbsoluteCaptureTime(1234567890, 1000000000)});
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
+  webrtc::RtpSource loudest_speaker_csrc_rtp_source(
+      webrtc::Timestamp::Micros(1234567890),
+      /*source_id=*/kLoudestSpeakerCsrc, webrtc::RtpSourceType::CSRC,
+      /*rtp_timestamp=*/1111111,
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
   webrtc::RtpSource ssrc_rtp_source(
       webrtc::Timestamp::Micros(1234567890),
       /*source_id=*/456, webrtc::RtpSourceType::SSRC,
       /*rtp_timestamp=*/2222222,
-      {.audio_level = 100,
-       .absolute_capture_time =
-           webrtc::AbsoluteCaptureTime(1234567890, 1000000000)});
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
+  EXPECT_CALL(*mock_receiver, GetSources)
+      .WillOnce(Return(std::vector<webrtc::RtpSource>{
+          std::move(csrc_rtp_source),
+          std::move(loudest_speaker_csrc_rtp_source),
+          std::move(ssrc_rtp_source)}));
+  MockFunction<void(AudioFrame)> mock_function;
+  std::optional<AudioFrame> received_frame;
+  EXPECT_CALL(mock_function, Call)
+      .WillOnce([&received_frame](AudioFrame frame) {
+        received_frame = std::move(frame);
+      });
+  ConferenceAudioTrack audio_track("mid", mock_receiver,
+                                   mock_function.AsStdFunction());
+  int16_t pcm_data[2 * 100];
+
+  audio_track.OnData(pcm_data,
+                     /*bits_per_sample=*/16,
+                     /*sample_rate=*/48000,
+                     /*number_of_channels=*/2,
+                     /*number_of_frames=*/100,
+                     /*absolute_capture_timestamp_ms=*/std::nullopt);
+
+  ASSERT_TRUE(received_frame.has_value());
+  EXPECT_THAT(received_frame->pcm16, SizeIs(100 * 2));
+  EXPECT_EQ(received_frame->bits_per_sample, 16);
+  EXPECT_EQ(received_frame->sample_rate, 48000);
+  EXPECT_EQ(received_frame->number_of_channels, 2);
+  EXPECT_EQ(received_frame->number_of_frames, 100);
+  EXPECT_TRUE(received_frame->is_from_loudest_speaker);
+  EXPECT_EQ(received_frame->contributing_source, 123);
+  EXPECT_EQ(received_frame->synchronization_source, 456);
+}
+
+TEST(ConferenceAudioTrackTest,
+     CallsObserverWithAudioFrameFromNonLoudestSpeaker) {
+  rtc::scoped_refptr<webrtc::MockRtpReceiver> mock_receiver(
+      new webrtc::MockRtpReceiver());
+  webrtc::RtpSource csrc_rtp_source(
+      webrtc::Timestamp::Micros(1234567890),
+      /*source_id=*/123, webrtc::RtpSourceType::CSRC,
+      /*rtp_timestamp=*/1111111,
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
+  webrtc::RtpSource ssrc_rtp_source(
+      webrtc::Timestamp::Micros(1234567890),
+      /*source_id=*/456, webrtc::RtpSourceType::SSRC,
+      /*rtp_timestamp=*/2222222,
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
   EXPECT_CALL(*mock_receiver, GetSources)
       .WillOnce(Return(std::vector<webrtc::RtpSource>{
           std::move(csrc_rtp_source), std::move(ssrc_rtp_source)}));
@@ -93,6 +139,7 @@ TEST(ConferenceAudioTrackTest, CallsObserverWithAudioFrame) {
   EXPECT_EQ(received_frame->sample_rate, 48000);
   EXPECT_EQ(received_frame->number_of_channels, 2);
   EXPECT_EQ(received_frame->number_of_frames, 100);
+  EXPECT_FALSE(received_frame->is_from_loudest_speaker);
   EXPECT_EQ(received_frame->contributing_source, 123);
   EXPECT_EQ(received_frame->synchronization_source, 456);
 }
@@ -119,15 +166,13 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithUnsupportedBitsPerSample) {
 }
 
 TEST(ConferenceAudioTrackTest, LogsErrorWithMissingCsrc) {
-  auto mock_receiver = rtc::scoped_refptr<webrtc::MockRtpReceiver>(
+  rtc::scoped_refptr<webrtc::MockRtpReceiver> mock_receiver(
       new webrtc::MockRtpReceiver());
   webrtc::RtpSource ssrc_rtp_source(
       webrtc::Timestamp::Micros(1234567890),
       /*source_id=*/456, webrtc::RtpSourceType::SSRC,
       /*rtp_timestamp=*/2222222,
-      {.audio_level = 100,
-       .absolute_capture_time =
-           webrtc::AbsoluteCaptureTime(1234567890, 1000000000)});
+      {.audio_level = 0, .absolute_capture_time = std::nullopt});
   EXPECT_CALL(*mock_receiver, GetSources)
       .WillOnce(
           Return(std::vector<webrtc::RtpSource>{std::move(ssrc_rtp_source)}));
@@ -153,15 +198,13 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithMissingCsrc) {
 }
 
 TEST(ConferenceAudioTrackTest, LogsErrorWithMissingSsrc) {
-  auto mock_receiver = rtc::scoped_refptr<webrtc::MockRtpReceiver>(
+  rtc::scoped_refptr<webrtc::MockRtpReceiver> mock_receiver(
       new webrtc::MockRtpReceiver());
   webrtc::RtpSource csrc_rtp_source(
       webrtc::Timestamp::Micros(1234567890),
       /*source_id=*/123, webrtc::RtpSourceType::CSRC,
       /*rtp_timestamp=*/1111111,
-      {.audio_level = 100,
-       .absolute_capture_time =
-           webrtc::AbsoluteCaptureTime(1234567890, 1000000000)});
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
   EXPECT_CALL(*mock_receiver, GetSources)
       .WillOnce(
           Return(std::vector<webrtc::RtpSource>{std::move(csrc_rtp_source)}));
@@ -186,7 +229,7 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithMissingSsrc) {
   EXPECT_EQ(message, "AudioFrame is missing SSRC for mid: mid");
 }
 TEST(ConferenceAudioTrackTest, LogsErrorWithMissingCsrcAndSsrc) {
-  auto mock_receiver = rtc::scoped_refptr<webrtc::MockRtpReceiver>(
+  rtc::scoped_refptr<webrtc::MockRtpReceiver> mock_receiver(
       new webrtc::MockRtpReceiver());
   EXPECT_CALL(*mock_receiver, GetSources)
       .WillOnce(Return(std::vector<webrtc::RtpSource>()));
@@ -215,23 +258,19 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithMissingCsrcAndSsrc) {
                                    "AudioFrame is missing SSRC for mid: mid"));
 }
 
-TEST(ConferenceAudioTrackTest, LogsIgnoringLoudestParticipantIndicator) {
-  auto mock_receiver = rtc::scoped_refptr<webrtc::MockRtpReceiver>(
+TEST(ConferenceAudioTrackTest, LogsErrorWithOnlyLoudestSpeakerCsrc) {
+  rtc::scoped_refptr<webrtc::MockRtpReceiver> mock_receiver(
       new webrtc::MockRtpReceiver());
   webrtc::RtpSource csrc_rtp_source(
       webrtc::Timestamp::Micros(1234567890),
       /*source_id=*/kLoudestSpeakerCsrc, webrtc::RtpSourceType::CSRC,
       /*rtp_timestamp=*/1111111,
-      {.audio_level = 100,
-       .absolute_capture_time =
-           webrtc::AbsoluteCaptureTime(1234567890, 1000000000)});
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
   webrtc::RtpSource ssrc_rtp_source(
       webrtc::Timestamp::Micros(1234567890),
       /*source_id=*/456, webrtc::RtpSourceType::SSRC,
       /*rtp_timestamp=*/2222222,
-      {.audio_level = 100,
-       .absolute_capture_time =
-           webrtc::AbsoluteCaptureTime(1234567890, 1000000000)});
+      {.audio_level = 100, .absolute_capture_time = std::nullopt});
   EXPECT_CALL(*mock_receiver, GetSources)
       .WillOnce(Return(std::vector<webrtc::RtpSource>{
           std::move(csrc_rtp_source), std::move(ssrc_rtp_source)}));
@@ -239,7 +278,7 @@ TEST(ConferenceAudioTrackTest, LogsIgnoringLoudestParticipantIndicator) {
                                    [](AudioFrame /*frame*/) {});
   ScopedMockLog log(kDoNotCaptureLogsYet);
   std::string message;
-  EXPECT_CALL(log, Log(INFO, _, _))
+  EXPECT_CALL(log, Log(ERROR, _, _))
       .WillOnce([&message](int, const std::string &, const std::string &msg) {
         message = msg;
       });
@@ -253,7 +292,7 @@ TEST(ConferenceAudioTrackTest, LogsIgnoringLoudestParticipantIndicator) {
                      /*number_of_frames=*/100,
                      /*absolute_capture_timestamp_ms=*/std::nullopt);
 
-  EXPECT_EQ(message, "Ignoring loudest speaker indicator for mid: mid");
+  EXPECT_EQ(message, "AudioFrame is missing CSRC for mid: mid");
 }
 
 TEST(ConferenceVideoTrackTest, CallsObserverWithVideoFrame) {
