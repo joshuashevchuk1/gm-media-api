@@ -19,6 +19,10 @@
  * functions. Only the owner of the class can update the value.
  */
 
+/**
+ * A helper class that can be used to get and subscribe to updates on a
+ * value.
+ */
 export interface Subscribable<T> {
   /**
    * @return the current value.
@@ -28,14 +32,14 @@ export interface Subscribable<T> {
   /**
    * Allows a callback to be added. This callback will be called whenever the
    * value is updated.
-   * @return an unsubscribe function
+   * @return An unsubscribe function.
    */
   subscribe(callback: (value: T) => void): () => void;
 
   /**
    * Removes the callback from the list of subscribers. The original callback
    * instance must be passed in as an argument.
-   * @return true if the callback was removed, false if it was not found.
+   * @return True if the callback was removed, false if it was not found.
    */
   unsubscribe(callback: (value: T) => void): boolean;
 }
