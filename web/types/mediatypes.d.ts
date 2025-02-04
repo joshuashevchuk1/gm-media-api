@@ -161,8 +161,8 @@ export interface BaseParticipant {
  */
 export interface SignedInUser {
   /**
-   * Unique ID of the user which is interoperable with the Google Admin SDK API and People
-   * API.
+   * Unique ID for the user. Interoperable with {@link https://developers.google.com/admin-sdk/directory/reference/rest/v1/users | Admin SDK API} and {@link https://developers.google.com/people/api/rest/v1/people | People API.}
+   * Format: `users/{user}`
    */
   readonly user: string;
   /**
