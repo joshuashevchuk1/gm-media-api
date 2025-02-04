@@ -19,15 +19,10 @@ package(default_visibility = [
 ])
 
 ts_library(
-    name = "communication_protocol_interface",
-    srcs = ["communication_protocol.ts"],
-)
-
-ts_library(
     name = "default_communication_protocol",
     srcs = ["default_communication_protocol_impl.ts"],
     deps = [
-        ":communication_protocol_interface",
+        "@media_api_samples//web/types:communication_protocol_interface",
         "@media_api_samples//web/types:media_types",
     ],
 )

@@ -48,3 +48,20 @@ ts_library(
     name = "mediacapture_transform",
     srcs = ["mediacapture_transform.d.ts"],
 )
+
+ts_library(
+    name = "communication_protocol_interface",
+    srcs = ["communication_protocol.d.ts"],
+)
+
+ts_library(
+    name = "meetmediaapiclient_interface",
+    srcs = ["meetmediaapiclient.d.ts"],
+    deps = [
+        ":communication_protocol_interface",
+        ":datachannels",
+        ":enums",
+        ":media_types",
+        ":subcribable",
+    ],
+)

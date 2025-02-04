@@ -18,9 +18,9 @@
  * @fileoverview interface for MeetMediaApiClient.
  */
 
-import {MediaApiCommunicationProtocol} from './internal/communication_protocols/communication_protocol';
-import {MediaApiResponseStatus} from './types/datachannels';
-import {MeetSessionStatus} from './types/enums';
+import {MediaApiCommunicationProtocol} from './communication_protocol';
+import {MediaApiResponseStatus} from './datachannels';
+import {MeetSessionStatus} from './enums';
 import {
   CanvasDimensions,
   MediaEntry,
@@ -28,26 +28,62 @@ import {
   MediaLayoutRequest,
   MeetStreamTrack,
   Participant,
-} from './types/mediatypes';
-import {Subscribable} from './types/subscribable';
+} from './mediatypes';
+import {Subscribable} from './subscribable';
 
 /**
- * Interface for the MeetMediaApiClient.
+ * Interface for the MeetMediaApiClient. Takes a required configuration
+ * and provides a set of subscribables to the client.
+ * Takes a {@link MeetMediaClientRequiredConfiguration} as a constructor
+ * parameter.
  */
 export interface MeetMediaApiClient {
+  /**
+   * The status of the session. Subscribable to changes in the session status.
+   */
   readonly sessionStatus: Subscribable<MeetSessionStatus>;
+  /**
+   * The meet stream tracks in the meeting. Subscribable to changes in the meet
+   * stream track collection.
+   */
   readonly meetStreamTracks: Subscribable<MeetStreamTrack[]>;
+  /**
+   * The media entries in the meeting. Subscribable to changes in the media
+   * entry collection.
+   */
   readonly mediaEntries: Subscribable<MediaEntry[]>;
+  /**
+   * The participants in the meeting. Subscribable to changes in the
+   * participant collection.
+   */
   readonly participants: Subscribable<Participant[]>;
+  /**
+   * The presenter in the meeting. Subscribable to changes in the presenter.
+   */
   readonly presenter: Subscribable<MediaEntry | undefined>;
+  /**
+   * The screenshare in the meeting. Subscribable to changes in the screenshare.
+   */
   readonly screenshare: Subscribable<MediaEntry[] | undefined>;
 
+  /**
+   * Joins the meeting.
+   * @param communicationProtocol The communication protocol to use. If not
+   *     provided, a default {@link MediaApiCommunicationProtocol} will be used.
+   */
   joinMeeting(
     communicationProtocol?: MediaApiCommunicationProtocol,
   ): Promise<void>;
+
+  /**
+   * Leaves the meeting.
+   */
   leaveMeeting(): Promise<void>;
 
   /**
+   * Applies the given media layout requests. This is required to be able to
+   * request a video stream. Only accepts media layouts that have been
+   * created with the {@link createMediaLayout} function.
    * @param requests The requests to apply.
    * @return A promise that resolves when the request has been accepted. NOTE:
    *     The promise resolving on the request does not mean the layout has been
@@ -58,11 +94,11 @@ export interface MeetMediaApiClient {
 
   /**
    * Creates a new media layout. Only media layouts that are created with this
-   * function can be applied. Otherwise, the applyLayout function will throw an
-   * error. Once the media layout has been created, you can construct a request
-   * and apply it with the applyLayout function. These media layout objects are
-   * meant to be reused (can be reassigned to a different request) but are
-   * distinct per stream (need to be created for each stream).
+   * function can be applied. Otherwise, the {@link applyLayout} function will
+   * throw an error. Once the media layout has been created, you can construct a
+   * request and apply it with the {@link applyLayout} function. These media
+   * layout objects are meant to be reused (can be reassigned to a different
+   * request) but are distinct per stream (need to be created for each stream).
    * @param canvasDimensions The dimensions of the canvas to render the layout
    *     on.
    * @return The new media layout.

@@ -65,3 +65,24 @@ ts_library(
         "@media_api_samples//web/types:mediacapture_transform",
     ],
 )
+
+ts_library(
+    name = "meetmediaapiclient_impl",
+    srcs = [
+        "meetmediaapiclient_impl.ts",
+    ],
+    deps = [
+        ":internal_meet_stream_track_impl",
+        ":internal_types",
+        ":meet_stream_track_impl",
+        ":subscribable_impl",
+        "@media_api_samples//web/internal/channel_handlers",
+        "@media_api_samples//web/internal/communication_protocols:default_communication_protocol",
+        "@media_api_samples//web/types:communication_protocol_interface",
+        "@media_api_samples//web/types:datachannels",
+        "@media_api_samples//web/types:enums",
+        "@media_api_samples//web/types:media_types",
+        "@media_api_samples//web/types:meetmediaapiclient_interface",
+        "@media_api_samples//web/types:subcribable",
+    ],
+)

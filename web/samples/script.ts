@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {MeetMediaApiClientImpl} from '../meetmediaapiclient_impl';
+import {MeetMediaApiClientImpl} from '../internal/meetmediaapiclient_impl';
 import {MeetSessionStatus} from '../types/enums';
 import {MeetStreamTrack} from '../types/mediatypes';
 

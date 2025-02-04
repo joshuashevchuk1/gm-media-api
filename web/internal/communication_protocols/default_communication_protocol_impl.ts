@@ -24,7 +24,7 @@ import {MeetMediaClientRequiredConfiguration} from '../../types/mediatypes';
 import {
   MediaApiCommunicationProtocol,
   MediaApiCommunicationResponse,
-} from './communication_protocol';
+} from '../../types/communication_protocol';
 
 const MEET_API_URL = 'https://meet.googleapis.com/v2beta/';
 

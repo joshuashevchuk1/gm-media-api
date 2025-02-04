@@ -28,7 +28,7 @@ ts_library(
     name = "script",
     srcs = ["script.ts"],
     deps = [
-        "@media_api_samples//web:meetmediaapiclient_impl",
+        "@media_api_samples//web/internal:meetmediaapiclient_impl",
         "@media_api_samples//web/types:enums",
         "@media_api_samples//web/types:media_types",
     ],

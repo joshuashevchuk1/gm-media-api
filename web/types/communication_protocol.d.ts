@@ -22,6 +22,11 @@
  * An abstract communication protocol.
  */
 export interface MediaApiCommunicationProtocol {
+  /**
+   * Connects to the active conference with the given SDP offer.
+   * @param sdpOffer The SDP offer to connect to the active conference.
+   * @return A promise that resolves to the communication response.
+   */
   connectActiveConference(
     sdpOffer: string,
   ): Promise<MediaApiCommunicationResponse>;
@@ -31,5 +36,8 @@ export interface MediaApiCommunicationProtocol {
  * The response from the communication protocol.
  */
 export declare interface MediaApiCommunicationResponse {
+  /**
+   * The WebRTC answer to the offer. Format is SDP.
+   */
   answer: string;
 }

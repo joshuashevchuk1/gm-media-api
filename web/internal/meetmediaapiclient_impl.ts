@@ -14,32 +14,12 @@
  * limitations under the License.
  */
 
-import {ChannelLogger} from './internal/channel_handlers/channel_logger';
-import {MediaEntriesChannelHandler} from './internal/channel_handlers/media_entries_channel_handler';
-import {MediaStatsChannelHandler} from './internal/channel_handlers/media_stats_channel_handler';
-import {ParticipantsChannelHandler} from './internal/channel_handlers/participants_channel_handler';
-import {SessionControlChannelHandler} from './internal/channel_handlers/session_control_channel_handler';
-import {VideoAssignmentChannelHandler} from './internal/channel_handlers/video_assignment_channel_handler';
 import {
   MediaApiCommunicationProtocol,
   MediaApiCommunicationResponse,
-} from './internal/communication_protocols/communication_protocol';
-import {DefaultCommunicationProtocolImpl} from './internal/communication_protocols/default_communication_protocol_impl';
-import {InternalMeetStreamTrackImpl} from './internal/internal_meet_stream_track_impl';
-import {
-  InternalMediaEntry,
-  InternalMediaLayout,
-  InternalMeetStreamTrack,
-  InternalParticipant,
-} from './internal/internal_types';
-import {MeetStreamTrackImpl} from './internal/meet_stream_track_impl';
-import {
-  SubscribableDelegate,
-  SubscribableImpl,
-} from './internal/subscribable_impl';
-import {MeetMediaApiClient} from './meetmediaapiclient';
-import {MediaApiResponseStatus} from './types/datachannels';
-import {MeetSessionStatus} from './types/enums';
+} from '../types/communication_protocol';
+import {MediaApiResponseStatus} from '../types/datachannels';
+import {MeetSessionStatus} from '../types/enums';
 import {
   CanvasDimensions,
   MediaEntry,
@@ -48,8 +28,25 @@ import {
   MeetMediaClientRequiredConfiguration,
   MeetStreamTrack,
   Participant,
-} from './types/mediatypes';
-import {Subscribable} from './types/subscribable';
+} from '../types/mediatypes';
+import {MeetMediaApiClient} from '../types/meetmediaapiclient';
+import {Subscribable} from '../types/subscribable';
+import {ChannelLogger} from './channel_handlers/channel_logger';
+import {MediaEntriesChannelHandler} from './channel_handlers/media_entries_channel_handler';
+import {MediaStatsChannelHandler} from './channel_handlers/media_stats_channel_handler';
+import {ParticipantsChannelHandler} from './channel_handlers/participants_channel_handler';
+import {SessionControlChannelHandler} from './channel_handlers/session_control_channel_handler';
+import {VideoAssignmentChannelHandler} from './channel_handlers/video_assignment_channel_handler';
+import {DefaultCommunicationProtocolImpl} from './communication_protocols/default_communication_protocol_impl';
+import {InternalMeetStreamTrackImpl} from './internal_meet_stream_track_impl';
+import {
+  InternalMediaEntry,
+  InternalMediaLayout,
+  InternalMeetStreamTrack,
+  InternalParticipant,
+} from './internal_types';
+import {MeetStreamTrackImpl} from './meet_stream_track_impl';
+import {SubscribableDelegate, SubscribableImpl} from './subscribable_impl';
 
 // Meet only supports 3 audio virtual ssrcs. If disabled, there will be no
 // audio.
