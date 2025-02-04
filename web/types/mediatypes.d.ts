@@ -35,7 +35,7 @@ import {Subscribable} from './subscribable';
 export interface MediaEntry {
   /**
    * Participant abstraction associated with this media entry.
-   * We expect participant to be set once.
+   * participant is immutable.
    */
   readonly participant: Subscribable<Participant | undefined>;
   /**
@@ -194,7 +194,7 @@ export interface PhoneUser {
  */
 export interface MeetStreamTrack {
   /**
-   * {@link https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrack | WebRTC MediaStreamTrack}
+   * The {@link https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrack | WebRTC MediaStreamTrack} interface of the Media Capture and Streams API represents a single audio or video media track within a stream.
    */
   readonly mediaStreamTrack: MediaStreamTrack;
   /**
@@ -219,7 +219,7 @@ export interface CanvasDimensions {
 }
 
 /**
- * A Media layout for the Media Api Web client. This must be created by the
+ * A Media layout for the Media API Web client. This must be created by the
  * Media API client to be valid. This is used to request a video stream.
  */
 export interface MediaLayout {
