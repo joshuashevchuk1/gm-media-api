@@ -32,11 +32,14 @@ export declare interface MediaApiRequest {
 }
 
 /**
- * Base interface for all responses.
+ * Base status for a response.
  */
 export declare interface MediaApiResponseStatus {
+  /** Status code for the response. */
   code: number;
+  /** Message for the response. */
   message: string;
+  /** Additional details for the response. */
   // tslint:disable-next-line:no-any
   details: any[];
 }
@@ -45,14 +48,18 @@ export declare interface MediaApiResponseStatus {
  * Base interface for all responses.
  */
 export declare interface MediaApiResponse {
-  /** ID of the associated request. */
+  /**
+   * ID of the associated request.
+   */
   requestId: number;
-  /** Response status for the request. */
+  /**
+   * Response status for the request.
+   */
   status: MediaApiResponseStatus;
 }
 
 /**
- * Base interface for all resource snapshots.
+ * Base interface for all resource snapshots provided by the server.
  */
 export declare interface ResourceSnapshot {
   /**
@@ -66,21 +73,24 @@ export declare interface ResourceSnapshot {
  * Base interface for all deleted resources.
  */
 export declare interface DeletedResource {
-  /** ID of the deleted resource. */
+  /**
+   * ID of the deleted resource.
+   */
   id: number;
 }
 
 // SESSION CONTROL
 
 /**
- * Data channel for session control.
+ * Session control data channel message from the client to the server.
  */
 export declare interface SessionControlChannelFromClient {
+  /** Request to leave the session. */
   request: LeaveRequest;
 }
 
 /**
- * Data channel for session control.
+ * Session control data channel message from the server to the client.
  */
 export declare interface SessionControlChannelToClient {
   /** An optional response to an incoming request. */
@@ -97,17 +107,25 @@ export declare interface SessionControlChannelToClient {
  * RTP.
  */
 export declare interface LeaveRequest extends MediaApiRequest {
+  /**
+   * Leave field, always empty.
+   */
   leave: {};
 }
 
 /**
- * Response to a leave request.
+ * Response to a leave request from the server.
  */
 export declare interface LeaveResponse extends MediaApiResponse {
+  /**
+   * Leave field, always empty.
+   */
   leave: {};
 }
 
-/** Singleton resource containing the status of the media session. */
+/**
+ * Singleton resource containing the status of the media session.
+ */
 export declare interface SessionStatus extends ResourceSnapshot {
   sessionStatus: {
     /**
@@ -124,7 +142,7 @@ export declare interface SessionStatus extends ResourceSnapshot {
 // PARTICIPANTS
 
 /**
- * Data channel for participants.
+ * Participants data channel message from the server to the client.
  */
 export declare interface ParticipantsChannelToClient {
   /**
@@ -136,13 +154,6 @@ export declare interface ParticipantsChannelToClient {
 }
 
 // (-- LINT.IfChange --)
-/**
- * Participant resource type
- */
-export type ParticipantResourceType =
-  | SignedInParticipant
-  | AnonymousParticipant
-  | PhoneParticipant;
 
 /**
  * Base participant resource type
@@ -152,45 +163,60 @@ export declare interface ParticipantResource extends ResourceSnapshot {
 }
 
 /**
- * Resource snapshot for a base participant.
+ * Singleton resource containing participant information.
+ * There will be exactly one of signedInUser, anonymousUser, or phoneUser fields
+ * set to determine the type of participant.
  */
 export declare interface BaseParticipant extends ResourceSnapshot {
   /**
-   * Resource name for a participant. Unused for now.
-   * Format: `conferenceRecords/{conference_record}/participants/{participant}`
+   * Resource name of the participant.
+   * Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
+   *
+   * You can use this to retrieve additional information about the participant
+   * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
+   *
+   * Unused for now. Use participantKey instead.
    */
   name?: string;
   /**
-   * Participant key of associated participant. The user must construct the
-   * resource name from this field to create an Meet API reference.
-   * Format is `participants/{participant}`
-   * You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
-   * and use the conference record to construct the participant name in the
-   * format of
-   * `conferenceRecords/{conference_record}/participants/{participant}`
+   * Participant key of associated participant.
+   * Format is `participants/{participant}`.
+   *
+   * You can use this to retrieve additional information about the participant
+   * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
+   *
+   * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}`.
+   *
+   *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
+   *
    */
   participantKey?: string;
+  /**
+   * Participant id for internal usage.
+   */
   participantId: number;
+  /**
+   * If set, the participant is a signed in user. Provides a unique ID and
+   * display name.
+   */
   signedInUser?: SignedInUser;
+  /**
+   * If set, the participant is an anonymous user. Provides a display name.
+   */
   anonymousUser?: AnonymousUser;
+  /**
+   * If set, the participant is a dial-in user. Provides a partially redacted
+   * phone number.
+   */
   phoneUser?: PhoneUser;
 }
 
 /**
- * Resource snapshot for a signed in participant.
- */
-export declare interface SignedInParticipant extends BaseParticipant {
-  signedInUser: SignedInUser;
-  anonymousUser: never;
-  phoneUser: never;
-}
-
-/**
- * Signed in user type, always has a unique id and display name
+ * Signed in user type, always has a unique id and display name.
  */
 export declare interface SignedInUser {
   /**
-   * Unique ID for the user. Interoperable with Admin SDK API and People API.
+   * Unique ID for the user. Interoperable with {@link https://developers.google.com/admin-sdk/directory/reference/rest/v1/users | Admin SDK API} and {@link https://developers.google.com/people/api/rest/v1/people | People API.}
    * Format: `users/{user}`
    */
   user: string;
@@ -204,29 +230,11 @@ export declare interface SignedInUser {
 }
 
 /**
- * Resource snapshot for an anonymous participant.
- */
-export declare interface AnonymousParticipant extends BaseParticipant {
-  anonymousUser: AnonymousUser;
-  signedInUser: never;
-  phoneUser: never;
-}
-
-/**
- * Anonymous user type, we expect there to always be a display name.
+ * Anonymous user type, requires display name to be set.
  */
 export declare interface AnonymousUser {
   /** User provided name when they join a conference anonymously. */
   displayName: string;
-}
-
-/**
- * Resource snapshot for a phone participant.
- */
-export declare interface PhoneParticipant extends BaseParticipant {
-  phoneUser: PhoneUser;
-  anonymousUser: never;
-  signedInUser: never;
 }
 
 /**
@@ -235,7 +243,7 @@ export declare interface PhoneParticipant extends BaseParticipant {
  * Google Account.
  */
 export declare interface PhoneUser {
-  /** Partially redacted user's phone number when calling. */
+  /** Partially redacted user's phone number. */
   displayName: string;
 }
 // (--
@@ -246,13 +254,16 @@ export declare interface PhoneUser {
  * Deleted resource for a participant.
  */
 export declare interface DeletedParticipant extends DeletedResource {
+  /**
+   * Set to true if the participant is successfully deleted.
+   */
   participant: boolean;
 }
 
 // MEDIA ENTRIES
 
 /**
- * Data channel for media entries.
+ * Media entries data channel message from the server to the client.
  */
 export declare interface MediaEntriesChannelToClient {
   /**
@@ -270,77 +281,85 @@ export declare interface MediaEntry extends ResourceSnapshot {
   mediaEntry: {
     /**
      * Participant ID for the media entry.
-     * @deprecated Use participant instead.
+     * @deprecated Use participant key instead.
      */
     participantId: number;
 
     /**
-     * Participant resource name, not display name. There is a many
-     * (participant) to one (media entry) relationship.
-     * See
-     * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants
-     * for more info.
+     * Resource name of the participant.
+     * Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
      *
-     * Format is
-     * `conferenceRecords/{conference_record}/participants/{participant}` Use this
-     * to correlate with other media entries produced by the same participant.
-     * For example, a participant with multiple devices active in the same
-     * meeting.
-     * Unused for now.
+     * You can use this to retrieve additional information about the participant
+     * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
+     *
+     * Unused for now. Use participantKey instead.
      */
     participant?: string;
 
     /**
-     * Participant key of associated participant. The user must construct the
-     * resource name from this field to create a Meet API reference.
+     * Participant key of associated participant.
+     * Format is `participants/{participant}`.
      *
-     * Format is`participants/{participant}`
+     * You can use this to retrieve additional information about the participant
+     * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
      *
-     * You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
-     * and use the conference record to construct the participant name in the
-     * format of
-     * `conferenceRecords/{conference_record}/participants/{participant}`
+     * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}`.
+     *
+     *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
+     *
      */
     participantKey?: string;
 
     /**
      * Participant session name. There should be a one to one mapping of session
-     * to Media Entry. See
-     * https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions
-     * for more info.
+     * to Media Entry. You can use this to retrieve additional information about
+     * the participant session from the
+     * {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions | Meet REST API - ParticipantSessions} resource
      *
      * Format is
      * `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
-     * Unused for now.
+     * Unused for now. Use sessionName instead.
      */
     session?: string;
 
     /**
-     * The session id of the media entry. The user must construct the
-     * session name from this field to create an Meet API reference.
-     * This can be done by combining the conference record, participant key, and
-     * session id.
+     * The session ID of the media entry.
      *
      * Format is
      * `participants/{participant}/participantSessions/{participant_session}`
      *
-     * You can retrieve the conference record from https://developers.google.com/meet/api/guides/conferences
-     * and use the conference record to construct the participant name in the
-     * format of
-     * `conferenceRecords/{conference_record}/participants/{participant}`
+     * You can use this to retrieve additional information about
+     * the participant session from the
+     * {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions | Meet REST API - ParticipantSessions} resource.
+     *
+     * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`.
+     *
+     *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
      */
     sessionName?: string;
-    /** CSRC for any audio stream contributed by this participant. */
+    /**
+     * CSRC for any audio stream contributed by this participant.
+     */
     audioCsrc?: number;
-    /** CSRCs for any video streams contributed by this participant. */
+    /**
+     * CSRCs for any video streams contributed by this participant.
+     */
     videoCsrcs?: number[];
-    /** Whether the current entry is presentating. */
+    /**
+     * Whether the current entry is presentating.
+     */
     presenter: boolean;
-    /** Whether the current entry is a screenshare. */
+    /**
+     * Whether the current entry is a screenshare.
+     */
     screenshare: boolean;
-    /** Whether this participant muted their audio stream. */
+    /**
+     * Whether this participant muted their audio stream.
+     */
     audioMuted: boolean;
-    /** Whether this participant muted their video stream. */
+    /**
+     * Whether this participant muted their video stream.
+     */
     videoMuted: boolean;
   };
 }
@@ -349,13 +368,16 @@ export declare interface MediaEntry extends ResourceSnapshot {
  * Deleted resource for a media entry.
  */
 export declare interface DeletedMediaEntry extends DeletedResource {
+  /**
+   * Set to true if the media entry is successfully deleted.
+   */
   mediaEntry: boolean;
 }
 
 // VIDEO ASSIGNMENT
 
 /**
- * Data channel for video assignment.
+ * Video assignment data channel message from the server to the client.
  */
 export declare interface VideoAssignmentChannelToClient {
   /** An optional response to an incoming request. */
@@ -367,9 +389,12 @@ export declare interface VideoAssignmentChannelToClient {
 }
 
 /**
- * Data channel for video assignment.
+ * Video assignment data channel message from the client to the server.
  */
 export declare interface VideoAssignmentChannelFromClient {
+  /**
+   * Request to set video assignment.
+   */
   request: SetVideoAssignmentRequest;
 }
 
@@ -400,21 +425,38 @@ export declare interface MediaApiCanvas {
    * the same canvas as much as possible.
    */
   id: number;
+  /**
+   * Dimensions of the canvas.
+   */
   dimensions: CanvasDimensions;
+  /**
+   * Tells the server to choose the best video stream for this canvas.
+   * This is the only supported mode for now.
+   */
   relevant: {};
 }
 
 /**
- * Request to set video assignment.
+ * Request to set video assignment. In order to get video streams, the client
+ * must set a video assignment.
  */
 export declare interface SetVideoAssignmentRequest extends MediaApiRequest {
+  /**
+   * Set video assignment.
+   */
   setAssignment: {
-    /** New video layout to use, replacing any previous layout. */
+    /** Layout model for the video assignment. */
     layoutModel: {
+      /**
+       * Label of the layout model. This is used to identify the layout model
+       * when requesting video assignment.
+       */
       label: string;
       /**
-       * Canvases to assign videos to from virtual SSRCs. Providing more
+       * Canvases to assign videos to virtual SSRCs. Providing more
        * canvases than exists virtual streams will result in an error status.
+       * Virtual video SSRCs are allocated during initialization of the client
+       * and the number of virtual SSRCs is fixed to the initial number of requested video streams.
        */
       canvases: MediaApiCanvas[];
     };
@@ -440,9 +482,12 @@ export declare interface SetVideoAssignmentRequest extends MediaApiRequest {
 }
 
 /**
- * Response to a set video assignment request.
+ * Response to a set video assignment request from the server.
  */
 export declare interface SetVideoAssignmentResponse extends MediaApiResponse {
+  /**
+   * Set video assignment. This is always empty.
+   */
   setAssignment: {};
 }
 
@@ -456,14 +501,18 @@ export declare interface VideoAssignment extends ResourceSnapshot {
     label: string;
     /** Canvas assignments, with no implied order. */
     canvases: Array<{
-      /** The video canvas the video should be shown in. */
+      /**
+       * The video canvas the video should be shown in.
+       */
       canvasId: number;
       /**
        * The virtual video SSRC that the video will be sent over, or
        * unset if no video from the participant.
        */
       ssrc?: number;
-      /** ID of the media entry associated with the video stream. */
+      /**
+       * ID of the media entry associated with the video stream.
+       */
       mediaEntryId: number;
     }>;
   };
@@ -472,11 +521,14 @@ export declare interface VideoAssignment extends ResourceSnapshot {
 // MEDIA STATS
 
 /**
- * Data channel for media stats.
+ * Media stats data channel message from the server to the client.
  */
 export declare interface MediaStatsChannelToClient {
   /** An optional response to an incoming request. */
   response?: UploadMediaStatsResponse;
+  /**
+   * Resource snapshots managed by the server.
+   */
   resources?: MediaStatsResource[];
 }
 
@@ -484,11 +536,16 @@ export declare interface MediaStatsChannelToClient {
  * Resource snapshot for media stats. Managed by the server.
  */
 export declare interface MediaStatsResource extends ResourceSnapshot {
+  /**
+   * Configuration for media stats provided by the server and has to be used by
+   * the client to upload media stats.
+   */
   configuration: MediaStatsConfiguration;
 }
 
 /**
- * Configuration for media stats.
+ * Configuration for media stats. Provided by the server and has to be used by
+ * the client to upload media stats.
  */
 export declare interface MediaStatsConfiguration {
   /**
@@ -497,36 +554,46 @@ export declare interface MediaStatsConfiguration {
    */
   uploadIntervalSeconds: number;
   /**
-   * A map of allowlisted sections. The key is the section type, and the value
-   * is the keys that are allowlisted for that section.
+   * A map of allow listed sections. The key is the section type, and the value
+   * is the keys that are allow listed for that section. Fields can be found in
+   * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport | RTCStatsReport}
    */
   allowlist: Map<string, {key: string[]}>;
 }
 
 /**
- * Data channel for media stats.
+ * Media stats data channel message from the client to the server.
  */
 export declare interface MediaStatsChannelFromClient {
+  /**
+   * Request to upload media stats.
+   */
   request: UploadMediaStatsRequest;
 }
 
 /**
  * Uploads media stats from the client to the server. The stats are
- * retrieved from WebRTC by calling RTCPeerConnection::getStats. The
- * returned RTCStatsReport can be easily mapped to the sections below.
+ * retrieved from WebRTC by calling {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/getStats | RTCPeerConnection.getStats()}. The
+ * returned {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport | RTCStatsReport} can be mapped to the sections below.
  */
 export declare interface UploadMediaStatsRequest extends MediaApiRequest {
+  /**
+   * Upload media stats.
+   */
   uploadMediaStats: {
     /**
      * Represents the entries in
-     * https://w3c.github.io/webrtc-pc/#dom-rtcstatsreport.
+     * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport | RTCStatsReport}.
+     * Formatted as an array of objects with an id and a type.
+     * The value of the id is a string WebRTC id of the section.
+     * The value of the type is the section.
      */
-    sections: StatsSection[];
+    sections: StatsSectionData[];
   };
 }
 
 /**
- * A section of media stats.
+ * A base section of media stats. All sections have an id.
  */
 export declare interface StatsSection {
   id: string;
@@ -537,48 +604,92 @@ export declare interface StatsSection {
 // indexed by string.
 
 /**
- * Stats section types.
+ * Stats section types. There are defined by the {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype | WebRTC spec.}
  */
 export declare interface StatTypes {
   // Need to use underscore naming to conform to expected structure for data
   // channel.
   // tslint:disable: enforce-name-casing
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-candidate-pair | ICE candidate pair stats related to RTCIceTransport}
+   */
   candidate_pair: CandidatePairSection;
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-codec | Codec stats that is currently being used by RTP streams being received by RTCPeerConnection}
+   */
   codec: CodecSection;
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-inbound-rtp | RTP stats for inbound stream that is currently received by RTCPeerConnection}
+   */
   inbound_rtp: InboundRtpSection;
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-media-playout | Media playout stats related to RTCPeerConnection}
+   */
   media_playout: MediaPlayoutSection;
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-transport | Transport stats related to RTCPeerConnection}
+   */
   transport: TransportSection;
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-local-candidate | ICE candidate stats for the local candidate related to RTCPeerConnection}
+   */
   local_candidate: IceCandidateSection;
+  /**
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-remote-candidate | ICE candidate stats for the remote candidate related to RTCPeerConnection}
+   */
   remote_candidate: IceCandidateSection;
   // tslint:enable: enforce-name-casing
 }
 
 /**
- * A section of media stats.
+ * A section of media stats. Used to map the {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport | RTCStatsReport} to the expected
+ * structure for the data channel. All sections have an id and a type.
+ * For fields in a specific type, please see the StatTypes interface.
  */
 export declare type StatsSectionData = StatsSection & {
   [key in keyof StatTypes]?: StatTypes[key];
 };
 
+/**
+ * Code section string fields.
+ * @ignore
+ */
 type CodeSectionStringFields = 'mime_type';
+/**
+ * Codec section numeric fields.
+ * @ignore
+ */
 type CodecSectionNumberFields = 'payload_type';
 
 /**
  * Codec fields.
+ * @ignore
  */
 export declare type CodecSectionFields =
   | CodeSectionStringFields
   | CodecSectionNumberFields;
 
-/** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-codec */
+/**
+ * Codec field mapping.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-codec | WebRTC spec.}
+ * @ignore
+ */
 export declare type CodecSection = {
   [key in CodecSectionFields]?: key extends CodeSectionStringFields
     ? string
     : number;
 };
 
+/**
+ * Inbound RTP section string fields.
+ * @ignore
+ */
 type InboundRtpSectionStringFields = 'codec_id' | 'kind';
 
+/**
+ * Inbound RTP section number fields.
+ * @ignore
+ */
 type InboundRtpSectionNumberFields =
   | 'ssrc'
   | 'jitter'
@@ -609,19 +720,29 @@ type InboundRtpSectionNumberFields =
   | 'total_samples_received'
   | 'total_samples_duration';
 
-/** Inbound Rtp fields. */
+/**
+ * Inbound Rtp fields.
+ * @ignore
+ */
 export type InboundRtpSectionFields =
   | InboundRtpSectionStringFields
   | InboundRtpSectionNumberFields;
 
-/** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-inbound-rtp */
+/**
+ * Inbound RTP field mapping.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-inbound-rtp | WebRTC spec.}
+ * @ignore
+ */
 export declare type InboundRtpSection = {
   [key in InboundRtpSectionFields]?: key extends InboundRtpSectionStringFields
     ? string
     : number;
 };
 
-/** Candidate pair fields. */
+/**
+ * Candidate pair fields.
+ * @ignore
+ */
 export type CandidatePairSectionFields =
   | 'available_outgoing_bitrate'
   | 'bytes_received'
@@ -631,14 +752,19 @@ export type CandidatePairSectionFields =
   | 'packets_sent'
   | 'total_round_trip_time';
 
-/** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-candidate-pair */
+/**
+ * Candidate pair field mapping.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-candidate-pair | WebRTC spec.}
+ * @ignore
+ */
 export declare type CandidatePairSection = {
   [key in CandidatePairSectionFields]: number;
 };
 
 /**
  * Media playout fields.
- * https://www.w3.org/TR/webrtc-stats/#dom-rtcaudioplayoutstats
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcaudioplayoutstats | WebRTC spec.}
+ * @ignore
  */
 export type MediaPlayoutSectionFields =
   | 'synthesized_samples_duration'
@@ -648,7 +774,9 @@ export type MediaPlayoutSectionFields =
   | 'total_samples_count';
 
 /**
- * https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-media-playout
+ * Media playout field mapping.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-media-playout | WebRTC spec.}
+ * @ignore
  */
 export declare type MediaPlayoutSection = {
   [key in MediaPlayoutSectionFields]?: number;
@@ -656,33 +784,52 @@ export declare type MediaPlayoutSection = {
 
 /**
  * Transport fields.
- * https://www.w3.org/TR/webrtc-stats/#transportstats-dict
+ * {@link https://www.w3.org/TR/webrtc-stats/#transportstats-dict | WebRTC spec.}
+ * @ignore
  */
 export type TransportSectionFields = 'selected_candidate_pair_id';
 
-/** https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-transport. */
+/**
+ * Transport field mapping.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-transport. | WebRTC spec.}
+ * @ignore
+ */
 export declare type TransportSection = {
   [key in TransportSectionFields]?: string;
 };
 
+/**
+ * Ice candidate string fields.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcicecandidatestats | WebRTC spec.}
+ * @ignore
+ */
 type IceCandidateSectionStringFields =
   | 'address'
   | 'candidate_type'
   | 'protocol'
   | 'network_type';
+
+/**
+ * Ice candidate number fields.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcicecandidatestats | WebRTC spec.}
+ * @ignore
+ */
 type IceCandidateSectionNumberFields = 'port';
 
 /**
- * Ice candidate fields.
- *  https://www.w3.org/TR/webrtc-stats/#dom-rtcicecandidatestats
+ *  Ice candidate fields.
+ *  {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcicecandidatestats | WebRTC spec.}
+ * @ignore
  */
 export declare type IceCandidateSectionFields =
   | IceCandidateSectionStringFields
   | IceCandidateSectionNumberFields;
 
 /**
- * https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-local-candidate or
- * https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-remote-candidate.
+ * Ice candidate field mapping.
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-local-candidate | Local candidate WebRTC spec.} or
+ * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-remote-candidate | Remote candidate WebRTC spec.}.
+ * @ignore
  */
 export declare type IceCandidateSection = {
   [key in IceCandidateSectionFields]?: key extends IceCandidateSectionStringFields
