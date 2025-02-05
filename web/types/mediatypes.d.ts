@@ -234,18 +234,18 @@ export interface MediaLayout {
 }
 
 /**
- * A request for a {@link MediaLayout}. This is required to be able to request a video
+ * A request for a {@link https://developers.google.com/meet/media-api/reference/web/media_api_web.medialayout | MediaLayout}. This is required to be able to request a video
  * stream.
  */
 export interface MediaLayoutRequest {
   /**
-   * The {@link MediaLayout} to request.
+   * The {@link https://developers.google.com/meet/media-api/reference/web/media_api_web.medialayout | MediaLayout} to request.
    */
   mediaLayout: MediaLayout;
 }
 
 /**
- * Required configuration for the {@link MeetMediaApiClient}.
+ * Required configuration for the {@link https://developers.google.com/meet/media-api/reference/web/media_api_web.meetmediaapiclient | MeetMediaApiClient}.
  */
 export interface MeetMediaClientRequiredConfiguration {
   /**
