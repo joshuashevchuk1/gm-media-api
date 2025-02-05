@@ -216,7 +216,7 @@ export declare interface BaseParticipant extends ResourceSnapshot {
  */
 export declare interface SignedInUser {
   /**
-   * Unique ID for the user. Interoperable with {@link https://developers.google.com/admin-sdk/directory/reference/rest/v1/users | Admin SDK API} and {@link https://developers.google.com/people/api/rest/v1/people | People API.}
+   * Unique ID for the user. Interoperable with {@link https://developers.google.com/admin-sdk/directory/reference/rest/v1/users | Admin SDK API } and {@link https://developers.google.com/people/api/rest/v1/people | People API}.
    * Format: `users/{user}`
    */
   user: string;
@@ -611,31 +611,31 @@ export declare interface StatTypes {
   // channel.
   // tslint:disable: enforce-name-casing
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-candidate-pair | ICE candidate pair stats related to RTCIceTransport}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-candidate-pair | ICE candidate pair stats } related to RTCIceTransport.
    */
   candidate_pair: CandidatePairSection;
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-codec | Codec stats that is currently being used by RTP streams being received by RTCPeerConnection}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-codec | Codec stats } that is currently being used by RTP streams being received by RTCPeerConnection.
    */
   codec: CodecSection;
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-inbound-rtp | RTP stats for inbound stream that is currently received by RTCPeerConnection}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-inbound-rtp | RTP stats } for inbound stream that is currently received by RTCPeerConnection.
    */
   inbound_rtp: InboundRtpSection;
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-media-playout | Media playout stats related to RTCPeerConnection}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-media-playout | Media playout stats } related to RTCPeerConnection.
    */
   media_playout: MediaPlayoutSection;
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-transport | Transport stats related to RTCPeerConnection}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-transport | Transport stats } related to RTCPeerConnection.
    */
   transport: TransportSection;
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-local-candidate | ICE candidate stats for the local candidate related to RTCPeerConnection}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-local-candidate | ICE candidate stats } for the local candidate related to RTCPeerConnection.
    */
   local_candidate: IceCandidateSection;
   /**
-   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-remote-candidate | ICE candidate stats for the remote candidate related to RTCPeerConnection}
+   * {@link https://www.w3.org/TR/webrtc-stats/#dom-rtcstatstype-remote-candidate | ICE candidate stats } for the remote candidate related to RTCPeerConnection.
    */
   remote_candidate: IceCandidateSection;
   // tslint:enable: enforce-name-casing
