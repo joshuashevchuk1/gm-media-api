@@ -21,7 +21,7 @@
 import {
   DeletedMediaEntry,
   MediaEntriesChannelToClient,
-  MediaEntry as MediaEntryResource,
+  MediaEntryResource,
 } from '../../types/datachannels';
 import {LogLevel} from '../../types/enums';
 import {

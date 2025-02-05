@@ -98,7 +98,7 @@ export declare interface SessionControlChannelToClient {
   /**
    * List of resource snapshots managed by the server, with no implied order.
    */
-  resources?: SessionStatus[];
+  resources?: SessionStatusResource[];
 }
 
 /**
@@ -126,17 +126,22 @@ export declare interface LeaveResponse extends MediaApiResponse {
 /**
  * Singleton resource containing the status of the media session.
  */
-export declare interface SessionStatus extends ResourceSnapshot {
-  sessionStatus: {
-    /**
-     * - `STATE_WAITING`: Session is waiting to be admitted into the meeting.
-     *   The client may never observe this state if it was admitted or rejected
-     *   quickly.
-     * - `STATE_JOINED`: Session has fully joined the meeting.
-     * - `STATE_DISCONNECTED`: Session is not connected to the meeting.
-     */
-    connectionState: 'STATE_WAITING' | 'STATE_JOINED' | 'STATE_DISCONNECTED';
-  };
+export declare interface SessionStatusResource extends ResourceSnapshot {
+  sessionStatus: SessionStatus;
+}
+
+/**
+ * Session status.
+ */
+export declare interface SessionStatus {
+  /**
+   * - `STATE_WAITING`: Session is waiting to be admitted into the meeting.
+   *   The client may never observe this state if it was admitted or rejected
+   *   quickly.
+   * - `STATE_JOINED`: Session has fully joined the meeting.
+   * - `STATE_DISCONNECTED`: Session is not connected to the meeting.
+   */
+  connectionState: 'STATE_WAITING' | 'STATE_JOINED' | 'STATE_DISCONNECTED';
 }
 
 // PARTICIPANTS
@@ -269,7 +274,7 @@ export declare interface MediaEntriesChannelToClient {
   /**
    * List of resource snapshots managed by the server, with no implied order.
    */
-  resources?: MediaEntry[];
+  resources?: MediaEntryResource[];
   /** List of deleted resources with no implied order. */
   deletedResources?: DeletedMediaEntry[];
 }
@@ -277,91 +282,99 @@ export declare interface MediaEntriesChannelToClient {
 /**
  * Resource snapshot for a media entry.
  */
-export declare interface MediaEntry extends ResourceSnapshot {
-  mediaEntry: {
-    /**
-     * Participant ID for the media entry.
-     * @deprecated Use participant key instead.
-     */
-    participantId: number;
+export declare interface MediaEntryResource extends ResourceSnapshot {
+  /**
+   * Media entry resource.
+   */
+  mediaEntry: MediaEntry;
+}
 
-    /**
-     * Resource name of the participant.
-     * Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
-     *
-     * You can use this to retrieve additional information about the participant
-     * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
-     *
-     * Unused for now. Use participantKey instead.
-     */
-    participant?: string;
+/**
+ * Media Entry interface.
+ */
+export declare interface MediaEntry {
+  /**
+   * Participant ID for the media entry.
+   * @deprecated Use participant key instead.
+   */
+  participantId: number;
 
-    /**
-     * Participant key of associated participant.
-     * Format is `participants/{participant}`.
-     *
-     * You can use this to retrieve additional information about the participant
-     * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
-     *
-     * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}`.
-     *
-     *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
-     *
-     */
-    participantKey?: string;
+  /**
+   * Resource name of the participant.
+   * Format: `conferenceRecords/{conferenceRecord}/participants/{participant}`
+   *
+   * You can use this to retrieve additional information about the participant
+   * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
+   *
+   * Unused for now. Use participantKey instead.
+   */
+  participant?: string;
 
-    /**
-     * Participant session name. There should be a one to one mapping of session
-     * to Media Entry. You can use this to retrieve additional information about
-     * the participant session from the
-     * {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions | Meet REST API - ParticipantSessions} resource
-     *
-     * Format is
-     * `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
-     * Unused for now. Use sessionName instead.
-     */
-    session?: string;
+  /**
+   * Participant key of associated participant.
+   * Format is `participants/{participant}`.
+   *
+   * You can use this to retrieve additional information about the participant
+   * from the {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants | Meet REST API - Participants} resource.
+   *
+   * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}`.
+   *
+   *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
+   *
+   */
+  participantKey?: string;
 
-    /**
-     * The session ID of the media entry.
-     *
-     * Format is
-     * `participants/{participant}/participantSessions/{participant_session}`
-     *
-     * You can use this to retrieve additional information about
-     * the participant session from the
-     * {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions | Meet REST API - ParticipantSessions} resource.
-     *
-     * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`.
-     *
-     *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
-     */
-    sessionName?: string;
-    /**
-     * CSRC for any audio stream contributed by this participant.
-     */
-    audioCsrc?: number;
-    /**
-     * CSRCs for any video streams contributed by this participant.
-     */
-    videoCsrcs?: number[];
-    /**
-     * Whether the current entry is presentating.
-     */
-    presenter: boolean;
-    /**
-     * Whether the current entry is a screenshare.
-     */
-    screenshare: boolean;
-    /**
-     * Whether this participant muted their audio stream.
-     */
-    audioMuted: boolean;
-    /**
-     * Whether this participant muted their video stream.
-     */
-    videoMuted: boolean;
-  };
+  /**
+   * Participant session name. There should be a one to one mapping of session
+   * to Media Entry. You can use this to retrieve additional information about
+   * the participant session from the
+   * {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions | Meet REST API - ParticipantSessions} resource
+   *
+   * Format is
+   * `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`
+   * Unused for now. Use sessionName instead.
+   */
+  session?: string;
+
+  /**
+   * The session ID of the media entry.
+   *
+   * Format is
+   * `participants/{participant}/participantSessions/{participant_session}`
+   *
+   * You can use this to retrieve additional information about
+   * the participant session from the
+   * {@link https://developers.google.com/meet/api/reference/rest/v2/conferenceRecords.participants.participantSessions | Meet REST API - ParticipantSessions} resource.
+   *
+   * `Note`: This has to be in the format of `conferenceRecords/{conference_record}/participants/{participant}/participantSessions/{participant_session}`.
+   *
+   *  You can retrieve the conference record from the {@link https://developers.google.com/meet/api/guides/conferences | Meet REST API - Conferences} resource.
+   */
+  sessionName?: string;
+  /**
+   * CSRC for any audio stream contributed by this participant.
+   */
+  audioCsrc?: number;
+  /**
+   * CSRCs for any video streams contributed by this participant.
+   */
+  videoCsrcs?: number[];
+  /**
+   * Whether the current entry is presentating.
+   */
+  presenter: boolean;
+  /**
+   * Whether the current entry is a screenshare.
+   */
+  screenshare: boolean;
+  /**
+   * Whether this participant muted their audio stream.
+   */
+  audioMuted: boolean;
+  /**
+   * Whether this participant muted their video stream.
+   */
+  videoMuted: boolean;
 }
 
 /**
@@ -385,7 +398,7 @@ export declare interface VideoAssignmentChannelToClient {
   /**
    * Resource snapshots managed by the server.
    */
-  resources?: VideoAssignment[];
+  resources?: VideoAssignmentResource[];
 }
 
 /**
@@ -446,39 +459,47 @@ export declare interface SetVideoAssignmentRequest extends MediaApiRequest {
    */
   setAssignment: {
     /** Layout model for the video assignment. */
-    layoutModel: {
-      /**
-       * Label of the layout model. This is used to identify the layout model
-       * when requesting video assignment.
-       */
-      label: string;
-      /**
-       * Canvases to assign videos to virtual SSRCs. Providing more
-       * canvases than exists virtual streams will result in an error status.
-       * Virtual video SSRCs are allocated during initialization of the client
-       * and the number of virtual SSRCs is fixed to the initial number of requested video streams.
-       */
-      canvases: MediaApiCanvas[];
-    };
+    layoutModel: LayoutModel;
     /**
      * Maximum video resolution the client wants to receive for any video
      * feeds.
      */
-    maxVideoResolution: {
-      /**
-       * Height in square pixels. For cameras that can change orientation,
-       * height refers to the measurement on the vertical axis.
-       */
-      height: number;
-      /**
-       * Width in square pixels. For cameras that can change orientation,
-       * width refers to the measurement on the horizontal axis.
-       */
-      width: number;
-      /** Frames per second. */
-      frameRate: number;
-    };
+    maxVideoResolution: VideoAssignmentMaxResolution;
   };
+}
+
+/**
+ * Maximum video resolution the client wants to receive for any video feeds.
+ */
+export declare interface VideoAssignmentMaxResolution {
+  /**
+   * Height in square pixels. For cameras that can change orientation,
+   * height refers to the measurement on the vertical axis.
+   */
+  height: number;
+  /**
+   * Width in square pixels. For cameras that can change orientation,
+   * width refers to the measurement on the horizontal axis.
+   */
+  width: number;
+  /** Frames per second. */
+  frameRate: number;
+}
+
+/** Layout model for the video assignment. */
+export declare interface LayoutModel {
+  /**
+   * Label of the layout model. This is used to identify the layout model
+   * when requesting video assignment.
+   */
+  label: string;
+  /**
+   * Canvases to assign videos to virtual SSRCs. Providing more
+   * canvases than exists virtual streams will result in an error status.
+   * Virtual video SSRCs are allocated during initialization of the client
+   * and the number of virtual SSRCs is fixed to the initial number of requested video streams.
+   */
+  canvases: MediaApiCanvas[];
 }
 
 /**
@@ -495,27 +516,37 @@ export declare interface SetVideoAssignmentResponse extends MediaApiResponse {
  * Singleton resource describing how video streams are assigned to video
  * canvases specified in the client's video layout model.
  */
-export declare interface VideoAssignment extends ResourceSnapshot {
-  videoAssignment: {
-    /** Label of the layout model. */
-    label: string;
-    /** Canvas assignments, with no implied order. */
-    canvases: Array<{
-      /**
-       * The video canvas the video should be shown in.
-       */
-      canvasId: number;
-      /**
-       * The virtual video SSRC that the video will be sent over, or
-       * unset if no video from the participant.
-       */
-      ssrc?: number;
-      /**
-       * ID of the media entry associated with the video stream.
-       */
-      mediaEntryId: number;
-    }>;
-  };
+export declare interface VideoAssignmentResource extends ResourceSnapshot {
+  videoAssignment: VideoAssignmentLayoutModel;
+}
+
+/**
+ * Video assignment for a layout model.
+ */
+export declare interface VideoAssignmentLayoutModel {
+  /** Label of the layout model. */
+  label: string;
+  /** Canvas assignments, with no implied order. */
+  canvases: CanvasAssignment[];
+}
+
+/**
+ * Video assignment for a single canvas.
+ */
+export declare interface CanvasAssignment {
+  /**
+   * The video canvas the video should be shown in.
+   */
+  canvasId: number;
+  /**
+   * The virtual video SSRC that the video will be sent over, or
+   * unset if no video from the participant.
+   */
+  ssrc?: number;
+  /**
+   * ID of the media entry associated with the video stream.
+   */
+  mediaEntryId: number;
 }
 
 // MEDIA STATS
@@ -580,16 +611,21 @@ export declare interface UploadMediaStatsRequest extends MediaApiRequest {
   /**
    * Upload media stats.
    */
-  uploadMediaStats: {
-    /**
-     * Represents the entries in
-     * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport | RTCStatsReport}.
-     * Formatted as an array of objects with an id and a type.
-     * The value of the id is a string WebRTC id of the section.
-     * The value of the type is the section.
-     */
-    sections: StatsSectionData[];
-  };
+  uploadMediaStats: UploadMediaStats;
+}
+
+/**
+ * Upload media stats.
+ */
+export declare interface UploadMediaStats {
+  /**
+   * Represents the entries in
+   * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport | RTCStatsReport}.
+   * Formatted as an array of objects with an id and a type.
+   * The value of the id is a string WebRTC id of the section.
+   * The value of the type is the section.
+   */
+  sections: StatsSectionData[];
 }
 
 /**

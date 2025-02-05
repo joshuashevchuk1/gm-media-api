@@ -23,9 +23,9 @@ import {
   MediaApiResponseStatus,
   SetVideoAssignmentRequest,
   SetVideoAssignmentResponse,
-  VideoAssignment,
   VideoAssignmentChannelFromClient,
   VideoAssignmentChannelToClient,
+  VideoAssignmentResource,
 } from '../../types/datachannels';
 import {LogLevel} from '../../types/enums';
 import {
@@ -123,7 +123,7 @@ export class VideoAssignmentChannelHandler {
     this.pendingRequestResolveMap.get(response.requestId)?.(response.status);
   }
 
-  private onVideoAssignmentResources(resources: VideoAssignment[]) {
+  private onVideoAssignmentResources(resources: VideoAssignmentResource[]) {
     resources.forEach((resource) => {
       this.channelLogger?.log(
         LogLevel.RESOURCES,
@@ -136,7 +136,7 @@ export class VideoAssignmentChannelHandler {
     });
   }
 
-  private onVideoAssignment(videoAssignment: VideoAssignment) {
+  private onVideoAssignment(videoAssignment: VideoAssignmentResource) {
     const canvases = videoAssignment.videoAssignment.canvases;
     canvases.forEach(
       (canvas: {canvasId: number; ssrc?: number; mediaEntryId: number}) => {
