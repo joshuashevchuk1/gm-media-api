@@ -37,7 +37,7 @@ limitations under the License.
         const meetingCode = document.getElementById('meeting-code').value;
         const videoStreamCount = document.getElementById('video-stream').value;
         const enableAudio = document.getElementById('audio-stream').checked;
-        createClient(meetingCode, videoStreamCount, enableAudio, authToken);
+        createClient('spaces/' + meetingCode, videoStreamCount, enableAudio, authToken);
       });
 
       const loginButton = document.getElementById('login');
@@ -70,7 +70,7 @@ limitations under the License.
   <label for="meeting-code">Meeting Code</label>
   <input id="meeting-code">
   <label id="video-stream-label" for="video-stream">Number of video streams: 0</label>
-  <input id="video-stream" type="range" min="0" max="6" value="0">
+  <input id="video-stream" type="range" min="0" max="3" value="0">
   <label for="audio-stream">Enable Audio?</label>
   <input id="audio-stream" type="checkbox">
   <button id="create-client">Create Client</button>

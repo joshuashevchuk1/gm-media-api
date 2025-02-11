@@ -16,6 +16,8 @@
       "baseUrl": ".",
       "paths": {
         "*": ["../*"]
-      }
+      },
+      "noUnusedParameters": false,
+      "types": ["../types/mediacapture_transform"]
   }
 }
