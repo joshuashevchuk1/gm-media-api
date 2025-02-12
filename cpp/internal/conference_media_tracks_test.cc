@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "testing/base/public/mock-log.h"
 #include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "cpp/api/media_api_client_interface.h"
 #include "webrtc/api/rtp_packet_info.h"
 #include "webrtc/api/rtp_packet_infos.h"
@@ -40,6 +41,7 @@ namespace meet {
 namespace {
 
 using ::base_logging::ERROR;
+using ::base_logging::INFO;
 using ::testing::_;
 using ::testing::kDoNotCaptureLogsYet;
 using ::testing::MockFunction;
@@ -179,8 +181,9 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithMissingCsrc) {
   ConferenceAudioTrack audio_track("mid", mock_receiver,
                                    [](AudioFrame /*frame*/) {});
   ScopedMockLog log(kDoNotCaptureLogsYet);
+  absl::SetVLogLevel("conference_media_tracks", 2);
   std::string message;
-  EXPECT_CALL(log, Log(ERROR, _, _))
+  EXPECT_CALL(log, Log(INFO, _, _))
       .WillOnce([&message](int, const std::string &, const std::string &msg) {
         message = msg;
       });
@@ -211,8 +214,9 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithMissingSsrc) {
   ConferenceAudioTrack audio_track("mid", mock_receiver,
                                    [](AudioFrame /*frame*/) {});
   ScopedMockLog log(kDoNotCaptureLogsYet);
+  absl::SetVLogLevel("conference_media_tracks", 2);
   std::string message;
-  EXPECT_CALL(log, Log(ERROR, _, _))
+  EXPECT_CALL(log, Log(INFO, _, _))
       .WillOnce([&message](int, const std::string &, const std::string &msg) {
         message = msg;
       });
@@ -237,7 +241,8 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithMissingCsrcAndSsrc) {
                                    [](AudioFrame /*frame*/) {});
   ScopedMockLog log(kDoNotCaptureLogsYet);
   std::vector<std::string> messages;
-  EXPECT_CALL(log, Log(ERROR, _, _))
+  absl::SetVLogLevel("conference_media_tracks", 2);
+  EXPECT_CALL(log, Log(INFO, _, _))
       .Times(2)
       .WillRepeatedly(
           [&messages](int, const std::string &, const std::string &msg) {
@@ -277,8 +282,9 @@ TEST(ConferenceAudioTrackTest, LogsErrorWithOnlyLoudestSpeakerCsrc) {
   ConferenceAudioTrack audio_track("mid", mock_receiver,
                                    [](AudioFrame /*frame*/) {});
   ScopedMockLog log(kDoNotCaptureLogsYet);
+  absl::SetVLogLevel("conference_media_tracks", 2);
   std::string message;
-  EXPECT_CALL(log, Log(ERROR, _, _))
+  EXPECT_CALL(log, Log(INFO, _, _))
       .WillOnce([&message](int, const std::string &, const std::string &msg) {
         message = msg;
       });

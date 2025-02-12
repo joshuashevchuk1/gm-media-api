@@ -71,11 +71,18 @@ void ConferenceAudioTrack::OnData(
   }
 
   if (!csrc.has_value() || !ssrc.has_value()) {
+    // Before real audio starts flowing, silent audio frames will be received.
+    // These frames will not have a CSRC or SSRC. Because these frames will be
+    // received frequently, log them at a lower level to avoid cluttering the
+    // logs.
+    //
+    // However, this may still happen in error cases, so something should be
+    // logged.
     if (!csrc.has_value()) {
-      LOG(ERROR) << "AudioFrame is missing CSRC for mid: " << mid_;
+      VLOG(2) << "AudioFrame is missing CSRC for mid: " << mid_;
     }
     if (!ssrc.has_value()) {
-      LOG(ERROR) << "AudioFrame is missing SSRC for mid: " << mid_;
+      VLOG(2) << "AudioFrame is missing SSRC for mid: " << mid_;
     }
     return;
   }
