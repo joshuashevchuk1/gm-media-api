@@ -31,8 +31,9 @@ namespace meet {
 
 class MediaApiClientFactory : public MediaApiClientFactoryInterface {
  public:
-  using PeerConnectionFactoryProvider = absl::AnyInvocable<rtc::scoped_refptr<
-      webrtc::PeerConnectionFactoryInterface>(rtc::Thread* signaling_thread)>;
+  using PeerConnectionFactoryProvider = absl::AnyInvocable<
+      rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>(
+          rtc::Thread* signaling_thread, rtc::Thread* worker_thread)>;
 
   // Default constructor that builds clients with real dependencies.
   MediaApiClientFactory();

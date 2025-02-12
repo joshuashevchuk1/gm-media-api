@@ -200,10 +200,11 @@ absl::StatusOr<MediaApiClient::ConferenceDataChannels> CreateDataChannels(
 }  // namespace
 
 MediaApiClientFactory::MediaApiClientFactory() {
-  peer_connection_factory_provider_ = [](rtc::Thread* signaling_thread)
+  peer_connection_factory_provider_ = [](rtc::Thread* signaling_thread,
+                                         rtc::Thread* worker_thread)
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return webrtc::CreatePeerConnectionFactory(
-        /*network_thread=*/nullptr, /*worker_thread=*/nullptr, signaling_thread,
+        /*network_thread=*/nullptr, worker_thread, signaling_thread,
         rtc::make_ref_counted<MediaApiAudioDeviceModule>(),
         webrtc::CreateBuiltinAudioEncoderFactory(),
         webrtc::CreateOpusAudioDecoderFactory(),
@@ -237,10 +238,15 @@ MediaApiClientFactory::CreateMediaApiClient(
   if (!signaling_thread->Start()) {
     return absl::InternalError("Failed to start signaling thread");
   }
+  std::unique_ptr<rtc::Thread> worker_thread = rtc::Thread::Create();
+  worker_thread->SetName("media_api_client_worker_thread", nullptr);
+  if (!worker_thread->Start()) {
+    return absl::InternalError("Failed to start worker thread");
+  }
 
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-      peer_connection_factory =
-          peer_connection_factory_provider_(signaling_thread.get());
+      peer_connection_factory = peer_connection_factory_provider_(
+          signaling_thread.get(), worker_thread.get());
 
   auto curl_connector =
       std::make_unique<CurlConnector>(std::make_unique<CurlApiWrapper>());
@@ -275,7 +281,7 @@ MediaApiClientFactory::CreateMediaApiClient(
   conference_peer_connection->SetPeerConnection(std::move(peer_connection));
 
   return std::make_unique<MediaApiClient>(
-      std::move(client_thread), std::move(observer),
+      std::move(client_thread), std::move(worker_thread), std::move(observer),
       std::move(conference_peer_connection),
       std::move(conference_data_channels).value());
 }

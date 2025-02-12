@@ -76,9 +76,9 @@ using ::testing::ScopedMockLog;
 using ::testing::SizeIs;
 using ::testing::status::StatusIs;
 
-std::unique_ptr<rtc::Thread> CreateClientThread() {
+std::unique_ptr<rtc::Thread> CreateThread(absl::string_view name) {
   std::unique_ptr<rtc::Thread> thread = rtc::Thread::Create();
-  thread->SetName("client_thread", nullptr);
+  thread->SetName(name, nullptr);
   EXPECT_TRUE(thread->Start());
   return thread;
 }
@@ -141,7 +141,8 @@ TEST(MediaApiClientTest, ConnectActiveConferenceSucceeds) {
         connect_called_notification.Notify();
         return absl::OkStatus();
       });
-  MediaApiClient client(CreateClientThread(), std::move(observer),
+  MediaApiClient client(CreateThread("client_thread"),
+                        CreateThread("worker_thread"), std::move(observer),
                         std::move(peer_connection),
                         CreateConferenceDataChannels());
 
@@ -168,7 +169,8 @@ TEST(MediaApiClientTest,
   EXPECT_CALL(*peer_connection,
               Connect("join_endpoint", "conference_id", "access_token"))
       .WillOnce([] { return absl::InternalError("Failed to connect."); });
-  MediaApiClient client(CreateClientThread(), std::move(observer),
+  MediaApiClient client(CreateThread("client_thread"),
+                        CreateThread("worker_thread"), std::move(observer),
                         std::move(peer_connection),
                         CreateConferenceDataChannels());
 
@@ -187,10 +189,10 @@ TEST(MediaApiClientTest,
   auto peer_connection = std::make_unique<MockConferencePeerConnection>();
   // Store a pointer, as the client will be used in the `Connect` lambda.
   MockConferencePeerConnection* peer_connection_ptr = peer_connection.get();
-  MediaApiClient client(CreateClientThread(),
-                        webrtc::make_ref_counted<MockMediaApiClientObserver>(),
-                        std::move(peer_connection),
-                        CreateConferenceDataChannels());
+  MediaApiClient client(
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      webrtc::make_ref_counted<MockMediaApiClientObserver>(),
+      std::move(peer_connection), CreateConferenceDataChannels());
   EXPECT_CALL(*peer_connection_ptr,
               Connect("join_endpoint", "conference_id", "access_token"))
       .WillOnce([&client] {
@@ -236,7 +238,8 @@ TEST(MediaApiClientTest, HandlesPeerConnectionDisconnected) {
         client_disconnected_status = status;
         client_disconnected_notification.Notify();
       });
-  MediaApiClient client(CreateClientThread(), std::move(observer),
+  MediaApiClient client(CreateThread("client_thread"),
+                        CreateThread("worker_thread"), std::move(observer),
                         std::move(peer_connection),
                         CreateConferenceDataChannels());
 
@@ -270,8 +273,8 @@ TEST(MediaApiClientTest, CallsObserverOnResourceUpdate) {
             resource_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(), std::move(observer),
-      std::make_unique<MockConferencePeerConnection>(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::make_unique<MockConferenceDataChannel>(),
@@ -316,7 +319,8 @@ TEST(MediaApiClientTest,
             resource_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(), std::move(observer), std::move(peer_connection),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::move(peer_connection),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::make_unique<MockConferenceDataChannel>(),
@@ -356,8 +360,8 @@ TEST(MediaApiClientTest,
             resource_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(), std::move(observer),
-      std::make_unique<MockConferencePeerConnection>(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::make_unique<MockConferenceDataChannel>(),
@@ -411,8 +415,8 @@ TEST(MediaApiClientTest, DisconnectsAfterReceivingDisconnectedSessionStatus) {
             resource_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(), std::move(observer),
-      std::make_unique<MockConferencePeerConnection>(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::make_unique<MockConferenceDataChannel>(),
@@ -447,7 +451,7 @@ TEST(MediaApiClientTest, DisconnectingTwiceLogsWarning) {
             resource_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
@@ -512,7 +516,7 @@ TEST(MediaApiClientTest, DisconnectingClosesConferencePeerConnection) {
             resource_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::move(peer_connection),
       MediaApiClient::ConferenceDataChannels{
@@ -581,7 +585,8 @@ TEST(MediaApiClientTest, StartsSendingStatsRequestsAfterReceivingStatsUpdate) {
             session_control_update_callback = std::move(callback);
           });
   MediaApiClient client(
-      CreateClientThread(), std::move(observer), std::move(peer_connection),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::move(peer_connection),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::move(media_stats_data_channel),
@@ -666,7 +671,7 @@ TEST(MediaApiClientTest, SendMediaStatsRequestReturnsError) {
             return absl::OkStatus();
           });
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
@@ -698,7 +703,7 @@ TEST(MediaApiClientTest, SendSessionControlRequestSucceeds) {
         return absl::OkStatus();
       });
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
@@ -730,7 +735,7 @@ TEST(MediaApiClientTest, SendVideoAssignmentRequestSucceeds) {
         return absl::OkStatus();
       });
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
@@ -759,7 +764,7 @@ TEST(MediaApiClientTest, SendRequestLogsWarningIfClientNotJoined) {
   ON_CALL(*video_assignment_data_channel, SendRequest)
       .WillByDefault(Return(absl::OkStatus()));
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
@@ -796,7 +801,7 @@ TEST(MediaApiClientTest, LeaveConferenceSendsLeaveRequest) {
         return absl::OkStatus();
       });
   MediaApiClient client(
-      CreateClientThread(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
       webrtc::make_ref_counted<MockMediaApiClientObserver>(),
       std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
@@ -835,8 +840,8 @@ TEST(MediaApiClientTest, LeaveConferenceDisconnectsClientIfNotJoined) {
   ON_CALL(*session_control_data_channel, SendRequest)
       .WillByDefault(Return(absl::OkStatus()));
   MediaApiClient client(
-      CreateClientThread(), std::move(observer),
-      std::make_unique<MockConferencePeerConnection>(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::make_unique<MockConferenceDataChannel>(),
@@ -882,8 +887,8 @@ TEST(MediaApiClientTest, LeaveConferenceFailsIfDisconnected) {
         return absl::OkStatus();
       });
   MediaApiClient client(
-      CreateClientThread(), std::move(observer),
-      std::make_unique<MockConferencePeerConnection>(),
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      std::move(observer), std::make_unique<MockConferencePeerConnection>(),
       MediaApiClient::ConferenceDataChannels{
           .media_entries = std::make_unique<MockConferenceDataChannel>(),
           .media_stats = std::make_unique<MockConferenceDataChannel>(),
@@ -963,7 +968,8 @@ TEST(MediaApiClientTest, HandlesSignaledAudioTrack) {
         track_signaled_callback = std::move(callback);
       });
   // Client.
-  MediaApiClient client(CreateClientThread(), std::move(observer),
+  MediaApiClient client(CreateThread("client_thread"),
+                        CreateThread("worker_thread"), std::move(observer),
                         std::move(peer_connection),
                         CreateConferenceDataChannels());
   track_signaled_callback(std::move(mock_transceiver));
@@ -1039,7 +1045,8 @@ TEST(MediaApiClientTest, HandlesSignaledVideoTrack) {
         track_signaled_callback = std::move(callback);
       });
   // Client.
-  MediaApiClient client(CreateClientThread(), std::move(observer),
+  MediaApiClient client(CreateThread("client_thread"),
+                        CreateThread("worker_thread"), std::move(observer),
                         std::move(peer_connection),
                         CreateConferenceDataChannels());
   track_signaled_callback(std::move(mock_transceiver));
@@ -1080,10 +1087,10 @@ TEST(MediaApiClientTest, LogsWarningIfSignaledTrackIsUnsupported) {
       .WillOnce([&](ConferencePeerConnection::TrackSignaledCallback callback) {
         track_signaled_callback = std::move(callback);
       });
-  MediaApiClient client(CreateClientThread(),
-                        webrtc::make_ref_counted<MockMediaApiClientObserver>(),
-                        std::move(peer_connection),
-                        CreateConferenceDataChannels());
+  MediaApiClient client(
+      CreateThread("client_thread"), CreateThread("worker_thread"),
+      webrtc::make_ref_counted<MockMediaApiClientObserver>(),
+      std::move(peer_connection), CreateConferenceDataChannels());
   ScopedMockLog log(kDoNotCaptureLogsYet);
   std::string message;
   EXPECT_CALL(log, Log(WARNING, _, _))

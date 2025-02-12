@@ -53,11 +53,13 @@ class MediaApiClient : public MediaApiClientInterface {
   };
 
   MediaApiClient(std::unique_ptr<rtc::Thread> client_thread,
+                 std::unique_ptr<rtc::Thread> worker_thread,
                  rtc::scoped_refptr<MediaApiClientObserverInterface> observer,
                  std::unique_ptr<ConferencePeerConnectionInterface>
                      conference_peer_connection,
                  ConferenceDataChannels data_channels)
       : client_thread_(std::move(client_thread)),
+        worker_thread_(std::move(worker_thread)),
         observer_(std::move(observer)),
         conference_peer_connection_(std::move(conference_peer_connection)),
         data_channels_(std::move(data_channels)) {
@@ -159,6 +161,11 @@ class MediaApiClient : public MediaApiClientInterface {
 
   // Internal thread for client initiated asynchronous behavior.
   std::unique_ptr<rtc::Thread> client_thread_;
+  // The worker thread used by WebRTC objects and the MediaApiAudioDeviceModule.
+  //
+  // Since the thread must outlive all of these objects, the client owns the
+  // thread.
+  std::unique_ptr<rtc::Thread> worker_thread_;
   // Safety flag for ensuring that tasks posted to the client thread are
   // cancelled when the client is destroyed.
   rtc::scoped_refptr<webrtc::PendingTaskSafetyFlag> alive_flag_;
