@@ -19,89 +19,87 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <vector>
 
-#include "absl/log/log.h"
-#include "absl/synchronization/mutex.h"
+#include "absl/log/check.h"
 #include "webrtc/api/audio/audio_device_defines.h"
+#include "webrtc/api/task_queue/pending_task_safety_flag.h"
 #include "webrtc/api/units/time_delta.h"
 #include "webrtc/rtc_base/thread.h"
 #include "webrtc/rtc_base/time_utils.h"
 
 namespace meet {
-namespace {
-
-// Audio is sampled at 48000 Hz (cycles per second)
-constexpr int kAudioSampleRatePerMillisecond = 48;
-constexpr int kSamplingIntervalMillis = 10;
-// This should be configurable but we will produce a mono output for now.
-constexpr int kNumberOfAudioChannels = 1;
-constexpr int kBytesPerSample = sizeof(int16_t);
-
-}  // namespace
 
 int32_t MediaApiAudioDeviceModule::RegisterAudioCallback(
     webrtc::AudioTransport* callback) {
-  absl::MutexLock lock(&mutex_);
+  DCHECK(worker_thread_.IsCurrent());
   audio_callback_ = callback;
   return 0;
 }
 
-int32_t MediaApiAudioDeviceModule::InitPlayout() {
-  if (task_thread_ != nullptr) {
-    LOG(WARNING) << "Init called on an already initialized "
-                    "MediaApiAudioDeviceModule.";
-    return -1;
+int32_t MediaApiAudioDeviceModule::StartPlayout() {
+  DCHECK(worker_thread_.IsCurrent());
+  if (is_playing_) {
+    return 0;
   }
+  is_playing_ = true;
 
-  task_thread_ = rtc::Thread::Create();
-  task_thread_->SetName("media_api_audio_thread", nullptr);
-  task_thread_->Start();
-  task_thread_->PostTask([this]() { ProcessPlayData(); });
+  worker_thread_.PostTask(
+      SafeTask(safety_flag_, [this]() { ProcessPlayData(); }));
   return 0;
 }
 
 int32_t MediaApiAudioDeviceModule::StopPlayout() {
-  if (task_thread_ == nullptr) {
-    return 0;
-  }
+  DCHECK(worker_thread_.IsCurrent());
+  is_playing_ = false;
+  return 0;
+}
 
-  task_thread_->Stop();
-  task_thread_.reset();
+bool MediaApiAudioDeviceModule::Playing() const {
+  DCHECK(worker_thread_.IsCurrent());
+  return is_playing_;
+}
+
+int32_t MediaApiAudioDeviceModule::Terminate() {
+  DCHECK(worker_thread_.IsCurrent());
+  safety_flag_->SetNotAlive();
   return 0;
 }
 
 void MediaApiAudioDeviceModule::ProcessPlayData() {
+  DCHECK(worker_thread_.IsCurrent());
+  if (!is_playing_) {
+    return;
+  }
+
   int64_t process_start_time = rtc::TimeMillis();
   const size_t number_of_samples = kAudioSampleRatePerMillisecond *
-                                   kSamplingIntervalMillis *
+                                   sampling_interval_.ms() *
                                    kNumberOfAudioChannels;
   std::vector<int16_t> sample_buffer(number_of_samples);
   size_t samples_out = 0;
   int64_t elapsed_time_ms = -1;
   int64_t ntp_time_ms = -1;
 
-  {
-    absl::MutexLock lock(&mutex_);
-    if (audio_callback_ != nullptr) {
-      audio_callback_->NeedMorePlayData(
-          number_of_samples, kBytesPerSample, kNumberOfAudioChannels,
-          // Sampling rate in Hz
-          kAudioSampleRatePerMillisecond * 1000, sample_buffer.data(),
-          samples_out, &elapsed_time_ms, &ntp_time_ms);
-    }
+  if (audio_callback_ != nullptr) {
+    audio_callback_->NeedMorePlayData(
+        number_of_samples, kBytesPerSample, kNumberOfAudioChannels,
+        // Sampling rate in samples per second (i.e. Hz).
+        kAudioSampleRatePerMillisecond * 1000, sample_buffer.data(),
+        samples_out, &elapsed_time_ms, &ntp_time_ms);
   }
+  int64_t process_end_time = rtc::TimeMillis();
 
-  task_thread_->PostDelayedHighPrecisionTask(
-      [this]() { ProcessPlayData(); },
-      // Delay the next sampling for either:
-      // 1. (sampling interval) - (time to process current sample)
-      // 2. No delay if current processing took longer than the desired 10ms
-      std::max(webrtc::TimeDelta::Millis(
-                   (process_start_time + kSamplingIntervalMillis) -
-                   rtc::TimeMillis()),
-               webrtc::TimeDelta::Zero()));
+  // Delay the next sampling for either:
+  // 1. (sampling interval) - (time to process current sample)
+  // 2. No delay if current processing took longer than the desired 10ms
+  // TODO: Improve testing around this computation.
+  webrtc::TimeDelta delay = std::max(
+      webrtc::TimeDelta::Millis((process_start_time + sampling_interval_.ms()) -
+                                process_end_time),
+      webrtc::TimeDelta::Zero());
+  worker_thread_.PostDelayedHighPrecisionTask(
+      SafeTask(safety_flag_, [this]() { ProcessPlayData(); }), delay);
 }
 
 }  // namespace meet

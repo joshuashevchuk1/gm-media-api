@@ -80,9 +80,7 @@ cc_library(
     srcs = ["media_api_audio_device_module.cc"],
     hdrs = ["media_api_audio_device_module.h"],
     deps = [
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/log:check",
         "@webrtc",
     ],
 )

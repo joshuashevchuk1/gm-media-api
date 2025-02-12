@@ -35,9 +35,6 @@
 
 namespace meet {
 // Meet uses this magic number to indicate the loudest speaker.
-//
-// Packets that contain this CSRC should be ignored, as they are not part of the
-// audio stream and are only used for signalling the loudest speaker.
 inline constexpr int kLoudestSpeakerCsrc = 42;
 
 // Adapter class for webrtc::AudioTrackSinkInterface that converts
