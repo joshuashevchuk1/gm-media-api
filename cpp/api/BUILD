@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = [
+    "@media_api_samples//cpp:__subpackages__",
+])
 
 cc_library(
     name = "media_api_client_interface",
     hdrs = [
         "media_api_client_interface.h",
     ],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
     deps = [
         ":media_entries_resource",
         ":media_stats_resource",
@@ -37,7 +38,6 @@ cc_library(
 cc_library(
     name = "media_api_client_factory_interface",
     hdrs = ["media_api_client_factory_interface.h"],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
     deps = [
         ":media_api_client_interface",
         "@com_google_absl//absl/status:statusor",
@@ -50,7 +50,6 @@ cc_library(
     hdrs = [
         "media_stats_resource.h",
     ],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
     deps = [
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -64,7 +63,6 @@ cc_library(
     hdrs = [
         "participants_resource.h",
     ],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
 )
 
 cc_library(
@@ -72,7 +70,6 @@ cc_library(
     hdrs = [
         "video_assignment_resource.h",
     ],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
     deps = ["@com_google_absl//absl/status"],
 )
 
@@ -81,7 +78,6 @@ cc_library(
     hdrs = [
         "media_entries_resource.h",
     ],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
 )
 
 cc_library(
@@ -89,6 +85,5 @@ cc_library(
     hdrs = [
         "session_control_resource.h",
     ],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
     deps = ["@com_google_absl//absl/status"],
 )

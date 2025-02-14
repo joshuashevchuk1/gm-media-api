@@ -18,7 +18,9 @@ cc_library(
     name = "media_api_client",
     srcs = ["media_api_client.cc"],
     hdrs = ["media_api_client.h"],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
+    visibility = [
+        "@media_api_samples//cpp:__subpackages__",
+    ],
     deps = [
         ":conference_data_channel_interface",
         ":conference_media_tracks",
@@ -46,7 +48,9 @@ cc_library(
     name = "media_api_client_factory",
     srcs = ["media_api_client_factory.cc"],
     hdrs = ["media_api_client_factory.h"],
-    visibility = ["@media_api_samples//cpp:__subpackages__"],
+    visibility = [
+        "@media_api_samples//cpp:__subpackages__",
+    ],
     deps = [
         ":conference_data_channel",
         ":conference_peer_connection",
