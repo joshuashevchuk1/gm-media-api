@@ -61,6 +61,9 @@ $ export PATH=~/src/depot_tools:$PATH
 $ mkdir webrtc-checkout
 $ cd webrtc-checkout
 $ fetch --nohooks webrtc
+$ cd src
+$ git checkout b63c05d1cc6da001fdcf1c79344c8f30b4ace8ee
+$ cd ..
 $ gclient sync
 $ mv src webrtc
 $ cd webrtc
