@@ -56,7 +56,7 @@ runs:
         pushd webrtc-checkout
         fetch --nohooks webrtc
         pushd src
-        git checkout a61a25a0b1b6a6009d3a18d676d8069b338b0187
+        git checkout b63c05d1cc6da001fdcf1c79344c8f30b4ace8ee
         popd
         sed -i -e "s|'src/resources'],|'src/resources'],'condition':'rtc_include_tests==true',|" src/DEPS
         gclient sync
