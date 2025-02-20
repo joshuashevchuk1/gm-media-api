@@ -48,7 +48,7 @@ limitations under the License.
         }
         const client = google.accounts.oauth2.initTokenClient({
               client_id: clientId,
-              scope: 'https://www.googleapis.com/auth/meetings.space.created https://www.googleapis.com/auth/meetings.media.readonly https://www.googleapis.com/auth/meetings.space.readonly',
+              scope: 'https://www.googleapis.com/auth/meetings.space.created https://www.googleapis.com/auth/meetings.conference.media.readonly https://www.googleapis.com/auth/meetings.space.readonly',
               callback: (tokenResponse) => {
                   console.log('response');
                   console.log(tokenResponse);
