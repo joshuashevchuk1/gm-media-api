@@ -62,7 +62,7 @@ $ mkdir webrtc-checkout
 $ cd webrtc-checkout
 $ fetch --nohooks webrtc
 $ cd src
-$ git checkout b63c05d1cc6da001fdcf1c79344c8f30b4ace8ee
+$ git checkout b00c469cad3f8c926fcf81ded90b90b6e1e62b9c
 $ cd ..
 $ gclient sync
 $ mv src webrtc
