@@ -1,0 +1,54 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//visibility:private"])
+
+cc_binary(
+    name = "single_user_media_sample",
+    srcs = ["single_user_media_sample.cc"],
+    deps = [
+        ":single_user_media_collector",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+        "@media_api_samples//cpp/api:media_api_client_interface",
+        "@media_api_samples//cpp/api:video_assignment_resource",
+        "@media_api_samples//cpp/internal:media_api_client_factory",
+        "@webrtc",
+    ],
+)
+
+cc_library(
+    name = "single_user_media_collector",
+    srcs = ["single_user_media_collector.cc"],
+    hdrs = ["single_user_media_collector.h"],
+    deps = [
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@media_api_samples//cpp/api:media_api_client_interface",
+        "@webrtc",
+    ],
+)
+
+# TODO: Add tests for sample components.

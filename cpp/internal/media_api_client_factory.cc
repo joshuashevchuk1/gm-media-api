@@ -106,7 +106,7 @@ absl::Status ConfigureTransceivers(
     }
   }
 
-  for (uint32_t i = 0; i < receiving_video_stream_count; i++) {
+  for (int i = 0; i < receiving_video_stream_count; i++) {
     webrtc::RtpTransceiverInit video_init;
     video_init.direction = webrtc::RtpTransceiverDirection::kRecvOnly;
     video_init.stream_ids = {absl::StrCat("video_stream_", i)};
