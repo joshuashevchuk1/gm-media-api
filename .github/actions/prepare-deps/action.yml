@@ -33,14 +33,25 @@ runs:
         sudo apt-get update && sudo apt-get install -y git curl wget python3 xz-utils lsb-release pkg-config bazel-7.4.1 libicu-dev apt-transport-https gnupg
       shell: bash
 
-    # Caches are TTL'd to 7 days.
+    - name: 📅 Set Time Zone
+      run: echo "TZ=UTC" >> $GITHUB_ENV
+      shell: bash
+
+    # We want to cache the build for a week, so we include the date (year and week) in the version.
+    - name: 🧱 Generate Cache Version
+      run: |
+        CACHE_VERSION=${{ runner.os }}-$(date +%Y-%V)-webrtc
+        echo "CACHE_VERSION=$CACHE_VERSION" >> $GITHUB_ENV
+      shell: bash
+
+    # Caches are TTL'd to 7 days after last access.
     # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy
     - name: 📦 Cache WebRTC build
       id: cache-webrtc
       uses: actions/cache@v3
       with:
         path: webrtc-checkout
-        key: ${{ runner.os }}-webrtc
+        key: ${{ env.CACHE_VERSION }}
 
     - name: 🔨 Install depot_tools
       if: ${{ steps.cache-webrtc.outputs.cache-hit != 'true' }}
