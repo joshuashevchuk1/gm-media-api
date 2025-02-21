@@ -135,10 +135,14 @@ export declare interface SessionStatusResource extends ResourceSnapshot {
  */
 export declare interface SessionStatus {
   /**
+   * The connection state of the session.
+   *
    * - `STATE_WAITING`: Session is waiting to be admitted into the meeting.
    *   The client may never observe this state if it was admitted or rejected
    *   quickly.
+   *
    * - `STATE_JOINED`: Session has fully joined the meeting.
+   *
    * - `STATE_DISCONNECTED`: Session is not connected to the meeting.
    */
   connectionState: 'STATE_WAITING' | 'STATE_JOINED' | 'STATE_DISCONNECTED';
