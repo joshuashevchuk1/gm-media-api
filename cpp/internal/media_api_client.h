@@ -102,12 +102,11 @@ class MediaApiClient : public MediaApiClientInterface {
   absl::Status SendRequest(const ResourceRequest& request) override;
 
  private:
-  // TODO: Add links to devsite documentation.
   enum class State { kReady, kConnecting, kJoining, kJoined, kDisconnected };
 
   // Configuration for collecting stats.
   //
-  // TODO: Add links to devsite documentation.
+  // https://developers.google.com/meet/media-api/guides/metrics
   struct StatsConfig {
     // Id to use when sending stats requests.
     //
