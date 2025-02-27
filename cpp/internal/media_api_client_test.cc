@@ -88,7 +88,6 @@ class MockConferencePeerConnection : public ConferencePeerConnectionInterface {
   MockConferencePeerConnection() {
     ON_CALL(*this, SetTrackSignaledCallback).WillByDefault(Return());
     ON_CALL(*this, SetDisconnectCallback).WillByDefault(Return());
-    ON_CALL(*this, SetPeerConnection).WillByDefault(Return());
     ON_CALL(*this, Close).WillByDefault(Return());
   }
 
@@ -99,10 +98,6 @@ class MockConferencePeerConnection : public ConferencePeerConnectionInterface {
   MOCK_METHOD(void, Close, (), (override));
   MOCK_METHOD(void, SetTrackSignaledCallback, (TrackSignaledCallback callback),
               (override));
-  MOCK_METHOD(
-      void, SetPeerConnection,
-      (rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection),
-      (override));
   MOCK_METHOD(void, SetDisconnectCallback, (DisconnectCallback callback),
               (override));
   MOCK_METHOD(void, GetStats, (webrtc::RTCStatsCollectorCallback * callback),

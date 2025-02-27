@@ -156,15 +156,6 @@ class ConferencePeerConnection : public ConferencePeerConnectionInterface,
   void OnTrack(
       rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
 
-  // Sets the underlying peer connection that this class wraps.
-  //
-  // Calling this is not thread-safe, so it should only be called before the
-  // conference peer connection is used.
-  void SetPeerConnection(rtc::scoped_refptr<webrtc::PeerConnectionInterface>
-                             peer_connection) override {
-    peer_connection_ = std::move(peer_connection);
-  }
-
   // Sets the disconnect callback for the conference peer connection. Conference
   // peer connections can only have one disconnect callback at a time, and the
   // disconnect callback must outlive the conference peer connection if one is
@@ -220,6 +211,15 @@ class ConferencePeerConnection : public ConferencePeerConnectionInterface,
       return;
     }
     peer_connection_->GetStats(callback);
+  }
+
+  // Sets the underlying peer connection that this class wraps.
+  //
+  // Calling this is not thread-safe, so it should only be called before the
+  // conference peer connection is used.
+  void SetPeerConnection(
+      rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection) {
+    peer_connection_ = std::move(peer_connection);
   }
 
  private:

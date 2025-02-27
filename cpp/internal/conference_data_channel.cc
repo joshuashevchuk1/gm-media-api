@@ -68,9 +68,10 @@ absl::Status ConferenceDataChannel::SendRequest(ResourceRequest request) {
   VLOG(1) << "Sending " << label() << " request: " << *stringify_status;
 
   data_channel_->SendAsync(
-      // Closing the peer connection cancels any pending blocks until any
-      // pending tasks complete. Therefore, the conference data channel will
-      // exist if this is called and null references should not be possible.
+      // Closing the associated peer connection prevents new tasks from being
+      // enqueued and blocks until any pending tasks complete. Therefore, the
+      // conference data channel will exist if this is called and null
+      // dereferences should not be possible.
       webrtc::DataBuffer(*std::move(stringify_status)),
       [this](webrtc::RTCError error) {
         if (!error.ok()) {

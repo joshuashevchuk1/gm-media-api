@@ -20,7 +20,6 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "webrtc/api/peer_connection_interface.h"
 #include "webrtc/api/rtp_transceiver_interface.h"
 #include "webrtc/api/scoped_refptr.h"
 #include "webrtc/api/stats/rtc_stats_collector_callback.h"
@@ -35,9 +34,6 @@ class ConferencePeerConnectionInterface {
       rtc::scoped_refptr<webrtc::RtpTransceiverInterface>)>;
 
   virtual ~ConferencePeerConnectionInterface() = default;
-
-  virtual void SetPeerConnection(
-      rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection) = 0;
 
   virtual void SetDisconnectCallback(
       DisconnectCallback disconnect_callback) = 0;
