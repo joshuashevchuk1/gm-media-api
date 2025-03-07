@@ -35,7 +35,7 @@
 #include "webrtc/api/make_ref_counted.h"
 #include "webrtc/rtc_base/thread.h"
 
-ABSL_FLAG(std::string, output_directory, "/tmp/test_output",
+ABSL_FLAG(std::string, output_directory, "/tmp/test_output_",
           "Directory and file prefix where files will be written. Files will "
           "be written to <output_directory>/<output_file_prefix>_<filename>.");
 

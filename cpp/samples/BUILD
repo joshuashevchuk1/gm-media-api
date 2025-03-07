@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = [
+    "@media_api_samples//cpp/samples:__subpackages__",
+])
 
 cc_binary(
     name = "single_user_media_sample",
@@ -38,6 +40,9 @@ cc_library(
     srcs = ["single_user_media_collector.cc"],
     hdrs = ["single_user_media_collector.h"],
     deps = [
+        ":media_writing",
+        ":output_file",
+        ":output_writer_interface",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -51,4 +56,28 @@ cc_library(
     ],
 )
 
-# TODO: Add tests for sample components.
+cc_library(
+    name = "output_writer_interface",
+    hdrs = ["output_writer_interface.h"],
+    deps = [
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "output_file",
+    srcs = ["output_file.cc"],
+    hdrs = ["output_file.h"],
+    deps = [":output_writer_interface"],
+)
+
+cc_library(
+    name = "media_writing",
+    srcs = ["media_writing.cc"],
+    hdrs = ["media_writing.h"],
+    deps = [
+        ":output_writer_interface",
+        "@webrtc",
+    ],
+)

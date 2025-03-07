@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <ios>
 #include <memory>
 #include <string>
 #include <utility>
@@ -31,6 +32,8 @@
 #include "absl/synchronization/notification.h"
 #include "absl/time/time.h"
 #include "cpp/api/media_api_client_interface.h"
+#include "cpp/samples/output_file.h"
+#include "cpp/samples/output_writer_interface.h"
 #include "webrtc/api/scoped_refptr.h"
 #include "webrtc/api/video/video_frame_buffer.h"
 #include "webrtc/rtc_base/thread.h"
@@ -42,15 +45,30 @@ namespace media_api_samples {
 
 // A basic media collector that collects audio and video streams from the
 // conference. This is primarily useful for experimenting with media processing
-// without having to worry about managing participant metadata. All audio goes
-// to a single file, and all video goes to a single file. Therefore, this
+// without having to worry about managing participant metadata. All audio and
+// video frames are handled without checking their sources; therefore, this
 // collector is best used for collecting data in a conference with a single
 // participant.
 class SingleUserMediaCollector : public meet::MediaApiClientObserverInterface {
  public:
+  // Default constructor that writes media to real files.
   SingleUserMediaCollector(absl::string_view output_file_prefix,
                            std::unique_ptr<rtc::Thread> collector_thread)
       : output_file_prefix_(output_file_prefix),
+        collector_thread_(std::move(collector_thread)) {
+    output_writer_provider_ = [](absl::string_view file_name) {
+      return std::make_unique<OutputFile>(
+          std::ofstream(std::string(file_name),
+                        std::ios::binary | std::ios::out | std::ios::trunc));
+    };
+  }
+
+  // Constructor that allows injecting a custom writer provider for testing.
+  SingleUserMediaCollector(absl::string_view output_file_prefix,
+                           std::unique_ptr<rtc::Thread> collector_thread,
+                           OutputWriterProvider output_writer_provider)
+      : output_file_prefix_(output_file_prefix),
+        output_writer_provider_(std::move(output_writer_provider)),
         collector_thread_(std::move(collector_thread)) {}
 
   ~SingleUserMediaCollector() override {
@@ -58,11 +76,6 @@ class SingleUserMediaCollector : public meet::MediaApiClientObserverInterface {
     // after they have been destroyed.
     collector_thread_->Stop();
   }
-
-  void OnAudioFrame(meet::AudioFrame frame) override;
-  void OnVideoFrame(meet::VideoFrame frame) override;
-  void HandleAudioBuffer(std::vector<int16_t> pcm16);
-  void HandleVideoBuffer(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
 
   void OnResourceUpdate(meet::ResourceUpdate update) override {
     // This sample does not handle resource updates.
@@ -92,26 +105,34 @@ class SingleUserMediaCollector : public meet::MediaApiClientObserverInterface {
     return absl::OkStatus();
   }
 
+  void OnAudioFrame(meet::AudioFrame frame) override;
+  void OnVideoFrame(meet::VideoFrame frame) override;
+
  private:
-  struct VideoFile {
-    int file_number;
+  struct VideoSegment {
+    int segment_number;
     int width;
     int height;
-    std::ofstream file;
+    std::unique_ptr<OutputWriterInterface> writer;
   };
 
+  void HandleAudioBuffer(std::vector<int16_t> pcm16);
+  void HandleVideoBuffer(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
+
   std::string output_file_prefix_;
-  // Audio file for all audio frames.
+  OutputWriterProvider output_writer_provider_;
+  // Audio writer for all audio frames.
   //
-  // The audio file is created when the first audio frame is received. Audio
-  // format does not change, so a single file can be used for all audio frames.
-  absl::Nullable<std::unique_ptr<std::ofstream>> audio_file_;
-  // The current video file, or nullptr if no video frames have been received
+  // The audio writer is created when the first audio frame is received. Audio
+  // format does not change, so a single writer can be used for all audio
+  // frames.
+  absl::Nullable<std::unique_ptr<OutputWriterInterface>> audio_writer_;
+  // The current video segment, or nullptr if no video frames have been received
   // yet.
   //
-  // The first video file is created when the first video frame is received. If
-  // the video frame size changes, a new video file is created.
-  absl::Nullable<std::unique_ptr<VideoFile>> video_file_;
+  // The first video segment is created when the first video frame is received.
+  // If the video frame size changes, a new video segment is created.
+  absl::Nullable<std::unique_ptr<VideoSegment>> video_segment_;
 
   absl::Notification join_notification_;
   absl::Notification disconnect_notification_;
