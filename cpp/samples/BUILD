@@ -13,7 +13,7 @@
 # limitations under the License.
 
 package(default_visibility = [
-    "@media_api_samples//cpp/samples:__subpackages__",
+    "@media_api_samples//cpp:__subpackages__",
 ])
 
 cc_binary(
