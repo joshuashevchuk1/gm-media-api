@@ -16,6 +16,38 @@ package(default_visibility = [
     "@media_api_samples//cpp:__subpackages__",
 ])
 
+cc_library(
+    name = "resource_manager_interface",
+    hdrs = ["resource_manager_interface.h"],
+    deps = [
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+        "@media_api_samples//cpp/api:media_entries_resource",
+        "@media_api_samples//cpp/api:participants_resource",
+    ],
+)
+
+cc_library(
+    name = "resource_manager",
+    srcs = ["resource_manager.cc"],
+    hdrs = ["resource_manager.h"],
+    deps = [
+        ":output_writer_interface",
+        ":resource_manager_interface",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/time",
+        "@media_api_samples//cpp/api:media_entries_resource",
+        "@media_api_samples//cpp/api:participants_resource",
+    ],
+)
+
 cc_binary(
     name = "single_user_media_sample",
     srcs = ["single_user_media_sample.cc"],
