@@ -88,9 +88,13 @@ absl::Status MediaApiClient::ConnectActiveConference(
   }
   VLOG(1) << "Client switched to connecting state.";
 
-  client_thread_->PostTask(SafeTask(alive_flag_, [&, join_endpoint,
-                                                  conference_id,
-                                                  access_token]() {
+  client_thread_->PostTask(SafeTask(alive_flag_, [&,
+                                                  join_endpoint = std::string(
+                                                      join_endpoint),
+                                                  conference_id = std::string(
+                                                      conference_id),
+                                                  access_token = std::string(
+                                                      access_token)]() {
     absl::Status connect_status = conference_peer_connection_->Connect(
         join_endpoint, conference_id, access_token);
     if (!connect_status.ok()) {
