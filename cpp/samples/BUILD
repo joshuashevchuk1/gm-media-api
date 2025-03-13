@@ -16,6 +16,52 @@ package(default_visibility = [
     "@media_api_samples//cpp:__subpackages__",
 ])
 
+cc_binary(
+    name = "multi_user_media_sample",
+    srcs = ["multi_user_media_sample.cc"],
+    deps = [
+        ":multi_user_media_collector",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+        "@media_api_samples//cpp/api:media_api_client_interface",
+        "@media_api_samples//cpp/api:video_assignment_resource",
+        "@media_api_samples//cpp/internal:media_api_client_factory",
+        "@webrtc",
+    ],
+)
+
+cc_library(
+    name = "multi_user_media_collector",
+    srcs = ["multi_user_media_collector.cc"],
+    hdrs = ["multi_user_media_collector.h"],
+    deps = [
+        ":media_writing",
+        ":output_file",
+        ":output_writer_interface",
+        ":resource_manager",
+        ":resource_manager_interface",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@media_api_samples//cpp/api:media_api_client_interface",
+        "@media_api_samples//cpp/api:media_entries_resource",
+        "@media_api_samples//cpp/api:participants_resource",
+        "@webrtc",
+    ],
+)
+
 cc_library(
     name = "resource_manager_interface",
     hdrs = ["resource_manager_interface.h"],

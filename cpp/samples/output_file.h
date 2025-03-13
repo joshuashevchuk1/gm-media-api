@@ -30,6 +30,7 @@ class OutputFile : public OutputWriterInterface {
  public:
   explicit OutputFile(std::ofstream file) : file_(std::move(file)) {}
   void Write(const char* content, std::streamsize size) override;
+  void Close() override;
 
  private:
   std::ofstream file_;

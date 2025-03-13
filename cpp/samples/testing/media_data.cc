@@ -29,9 +29,9 @@
 
 namespace media_api_samples {
 
-AudioTestData CreateAudioTestData() {
-  std::vector<int16_t> pcm16(10);
-  for (int i = 0; i < pcm16.size(); ++i) {
+AudioTestData CreateAudioTestData(int num_samples) {
+  std::vector<int16_t> pcm16(num_samples);
+  for (int i = 0; i < num_samples; ++i) {
     pcm16[i] = i;
   }
 

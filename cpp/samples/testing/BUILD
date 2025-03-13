@@ -36,3 +36,17 @@ cc_library(
         "@media_api_samples//cpp/samples:output_writer_interface",
     ],
 )
+
+cc_library(
+    name = "mock_resource_manager",
+    testonly = True,
+    hdrs = ["mock_resource_manager.h"],
+    deps = [
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+        "@com_google_googletest//:gtest",
+        "@media_api_samples//cpp/api:media_entries_resource",
+        "@media_api_samples//cpp/api:participants_resource",
+        "@media_api_samples//cpp/samples:resource_manager_interface",
+    ],
+)

@@ -30,12 +30,16 @@
 namespace media_api_samples {
 
 struct AudioTestData {
+  // The input frame that is sent to the media collector.
   meet::AudioFrame frame;
+  // The expected content that should be written to the output writer.
   std::vector<int16_t> pcm16;
 };
 
 struct VideoTestData {
+  // The input frame that is sent to the media collector.
   meet::VideoFrame meet_frame;
+  // The expected content that should be written to the output writer.
   std::vector<char> yuv_data;
   // A reference to this object is stored in `meet_frame`. Therefore, this field
   // keeps the object alive until the `meet_frame` is no longer needed.
@@ -44,7 +48,7 @@ struct VideoTestData {
 
 // Creates input audio and video frames, and the expected output for those
 // frames.
-AudioTestData CreateAudioTestData();
+AudioTestData CreateAudioTestData(int num_samples);
 VideoTestData CreateVideoTestData(int width, int height);
 
 }  // namespace media_api_samples

@@ -24,4 +24,6 @@ void OutputFile::Write(const char* content, std::streamsize size) {
   file_.write(content, size);
 }
 
+void OutputFile::Close() { file_.close(); }
+
 }  // namespace media_api_samples

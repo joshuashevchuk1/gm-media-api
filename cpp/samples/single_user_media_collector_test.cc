@@ -76,7 +76,7 @@ TEST(SingleUserMediaCollectorTest,
 }
 
 TEST(SingleUserMediaCollectorTest, ReceivesAudioFrameAndWritesToAudioFile) {
-  AudioTestData test_data = CreateAudioTestData();
+  AudioTestData test_data = CreateAudioTestData(/*num_samples=*/10);
   std::vector<int16_t> pcm16 = std::move(test_data.pcm16);
 
   auto mock_output_file = std::make_unique<MockOutputWriter>();
@@ -109,8 +109,8 @@ TEST(SingleUserMediaCollectorTest, ReceivesAudioFrameAndWritesToAudioFile) {
 }
 
 TEST(SingleUserMediaCollectorTest, ReceivesAudioFrameOnlyCreatesOneAudioFile) {
-  AudioTestData test_data1 = CreateAudioTestData();
-  AudioTestData test_data2 = CreateAudioTestData();
+  AudioTestData test_data1 = CreateAudioTestData(/*num_samples=*/10);
+  AudioTestData test_data2 = CreateAudioTestData(/*num_samples=*/20);
 
   auto mock_output_file = std::make_unique<MockOutputWriter>();
   int write_count = 0;

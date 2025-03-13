@@ -28,6 +28,7 @@ class MockOutputWriter : public OutputWriterInterface {
  public:
   MOCK_METHOD(void, Write, (const char* content, std::streamsize size),
               (override));
+  MOCK_METHOD(void, Close, (), (override));
 };
 
 }  // namespace media_api_samples

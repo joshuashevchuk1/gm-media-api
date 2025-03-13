@@ -30,6 +30,7 @@ class OutputWriterInterface {
  public:
   virtual ~OutputWriterInterface() = default;
   virtual void Write(const char* content, std::streamsize size) = 0;
+  virtual void Close() = 0;
 };
 
 // Interface for providing output writers.

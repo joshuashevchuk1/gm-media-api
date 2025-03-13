@@ -137,6 +137,8 @@ class SingleUserMediaCollector : public meet::MediaApiClientObserverInterface {
   absl::Notification join_notification_;
   absl::Notification disconnect_notification_;
 
+  // The media collector's internal thread. Used for moving work off of the
+  // MediaApiClient's threads and synchronizing access to member variables.
   std::unique_ptr<rtc::Thread> collector_thread_;
 };
 
