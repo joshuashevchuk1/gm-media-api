@@ -189,6 +189,8 @@ export class MediaEntriesChannelHandler {
         internalMediaEntry = this.internalMediaEntryMap.get(mediaEntry!);
         internalMediaEntry!.audioMuted.set(resource.mediaEntry.audioMuted);
         internalMediaEntry!.videoMuted.set(resource.mediaEntry.videoMuted);
+        internalMediaEntry!.screenShare.set(resource.mediaEntry.screenshare);
+        internalMediaEntry!.isPresenter.set(resource.mediaEntry.presenter);
         internalMediaEntry!.audioCsrc = resource.mediaEntry.audioCsrc;
         internalMediaEntry!.videoCsrc = videoCsrc;
       } else {
