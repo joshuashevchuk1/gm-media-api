@@ -214,8 +214,7 @@ void MediaApiClient::HandleTrackSignaled(
       media_tracks_.push_back(std::move(conference_video_track));
     }
       return;
-    case cricket::MEDIA_TYPE_DATA:
-    case cricket::MEDIA_TYPE_UNSUPPORTED:
+    default:
       LOG(WARNING) << "Received remote track of unsupported media type: "
                    << media_type;
       break;
