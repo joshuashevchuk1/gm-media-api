@@ -39,8 +39,6 @@
 namespace media_api_samples {
 namespace {
 
-constexpr absl::Duration kMediaSegmentGapWidth = absl::Milliseconds(100);
-
 constexpr absl::string_view kTmpAudioFormat = "%saudio_%s_tmp.pcm";
 constexpr absl::string_view kTmpVideoFormat = "%svideo_%s_tmp_%dx%d.yuv";
 constexpr absl::string_view kFinishedAudioFormat = "%saudio_%s_%s_%s.pcm";
@@ -82,7 +80,7 @@ void MultiUserMediaCollector::HandleAudioData(std::vector<int16_t> samples,
       it != audio_segments_.end()) {
     AudioSegment* current_audio_segment = it->second.get();
     if (received_time - current_audio_segment->last_frame_time <
-        kMediaSegmentGapWidth) {
+        segment_gap_threshold_) {
       // Reuse the existing segment if the received frame is within the gap of
       // the previous frame.
       audio_segment = current_audio_segment;
@@ -147,7 +145,7 @@ void MultiUserMediaCollector::HandleVideoData(
       it != video_segments_.end()) {
     VideoSegment* current_video_segment = it->second.get();
     if (received_time - current_video_segment->last_frame_time <
-            kMediaSegmentGapWidth &&
+            segment_gap_threshold_ &&
         current_video_segment->width == i420->width() &&
         current_video_segment->height == i420->height()) {
       // Reuse the existing segment if the received frame is within the gap of

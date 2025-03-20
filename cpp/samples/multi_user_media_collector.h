@@ -91,8 +91,10 @@ class MultiUserMediaCollector : public meet::MediaApiClientObserverInterface {
   // Default constructor that writes media to real files and uses a real
   // participant manager.
   MultiUserMediaCollector(absl::string_view output_file_prefix,
+                          absl::Duration segment_gap_threshold,
                           std::unique_ptr<rtc::Thread> collector_thread)
       : output_file_prefix_(output_file_prefix),
+        segment_gap_threshold_(segment_gap_threshold),
         collector_thread_(std::move(collector_thread)) {
     output_writer_provider_ = [](absl::string_view file_name) {
       LOG(INFO) << "Creating output file: " << file_name;
@@ -104,7 +106,6 @@ class MultiUserMediaCollector : public meet::MediaApiClientObserverInterface {
                           absl::string_view finished_file_name) {
       std::rename(tmp_file_name.data(), finished_file_name.data());
     };
-    segment_gap_threshold_ = absl::Milliseconds(100);
     resource_manager_ =
         std::make_unique<ResourceManager>(output_writer_provider_(
             absl::StrCat(output_file_prefix_, "event_log.csv")));

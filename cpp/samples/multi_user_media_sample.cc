@@ -59,6 +59,13 @@ ABSL_FLAG(absl::Duration, join_timeout, absl::Minutes(2),
           "a reasonable amount of time for the participant to complete this "
           "step.");
 
+ABSL_FLAG(absl::Duration, segment_gap_threshold, absl::Seconds(1),
+          "The amount of time that must pass between media frames before a new "
+          "media segment is created. If 2 media frames are received with less "
+          "that this gap, they will be considered part of the same segment. A "
+          "larger gap will result in fewer, sparser segments. A smaller gap "
+          "will result in more, denser segments.");
+
 namespace {
 
 meet::VideoAssignmentChannelFromClient CreateVideoAssignmentRequest() {
@@ -133,7 +140,8 @@ int main(int argc, char** argv) {
 
   auto media_collector =
       webrtc::make_ref_counted<media_api_samples::MultiUserMediaCollector>(
-          output_file_prefix, std::move(collector_thread));
+          output_file_prefix, absl::GetFlag(FLAGS_segment_gap_threshold),
+          std::move(collector_thread));
   meet::MediaApiClientConfiguration config = {
       .receiving_video_stream_count = 3,
       .enable_audio_streams = true,

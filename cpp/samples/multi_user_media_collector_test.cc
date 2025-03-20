@@ -55,7 +55,7 @@ using ::testing::ScopedMockLog;
 
 TEST(MultiUserMediaCollectorTest, WaitForJoinedTimesOutBeforeJoining) {
   auto collector = webrtc::make_ref_counted<MultiUserMediaCollector>(
-      "test_", rtc::Thread::Create());
+      "test_", absl::Seconds(1), rtc::Thread::Create());
 
   EXPECT_EQ(collector->WaitForJoined(absl::Seconds(1)).code(),
             absl::StatusCode::kDeadlineExceeded);
@@ -63,7 +63,7 @@ TEST(MultiUserMediaCollectorTest, WaitForJoinedTimesOutBeforeJoining) {
 
 TEST(MultiUserMediaCollectorTest, WaitForJoinedSucceedsAfterJoining) {
   auto collector = webrtc::make_ref_counted<MultiUserMediaCollector>(
-      "test_", rtc::Thread::Create());
+      "test_", absl::Seconds(1), rtc::Thread::Create());
   collector->OnJoined();
   EXPECT_EQ(collector->WaitForJoined(absl::Seconds(1)), absl::OkStatus());
 }
@@ -71,7 +71,7 @@ TEST(MultiUserMediaCollectorTest, WaitForJoinedSucceedsAfterJoining) {
 TEST(MultiUserMediaCollectorTest,
      WaitForDisconnectedTimesOutBeforeDisconnecting) {
   auto collector = webrtc::make_ref_counted<MultiUserMediaCollector>(
-      "test_", rtc::Thread::Create());
+      "test_", absl::Seconds(1), rtc::Thread::Create());
 
   EXPECT_EQ(collector->WaitForDisconnected(absl::Seconds(1)).code(),
             absl::StatusCode::kDeadlineExceeded);
@@ -82,7 +82,7 @@ TEST(MultiUserMediaCollectorTest,
   auto thread = rtc::Thread::Create();
   thread->Start();
   auto collector = webrtc::make_ref_counted<MultiUserMediaCollector>(
-      "test_", std::move(thread));
+      "test_", absl::Seconds(1), std::move(thread));
   collector->OnDisconnected(absl::OkStatus());
   EXPECT_EQ(collector->WaitForDisconnected(absl::Seconds(1)), absl::OkStatus());
 }
