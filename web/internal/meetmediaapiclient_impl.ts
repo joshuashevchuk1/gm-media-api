@@ -65,7 +65,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   readonly mediaEntries: Subscribable<MediaEntry[]>;
   readonly participants: Subscribable<Participant[]>;
   readonly presenter: Subscribable<MediaEntry | undefined>;
-  readonly screenshare: Subscribable<MediaEntry[] | undefined>;
+  readonly screenshare: Subscribable<MediaEntry | undefined>;
 
   // Private properties
   private readonly sessionStatusDelegate: SubscribableDelegate<MeetSessionStatus>;
@@ -78,7 +78,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     MediaEntry | undefined
   >;
   private readonly screenshareDelegate: SubscribableDelegate<
-    MediaEntry[] | undefined
+    MediaEntry | undefined
   >;
 
   private readonly peerConnection: RTCPeerConnection;
@@ -165,9 +165,9 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
       undefined,
     );
     this.presenter = this.presenterDelegate.getSubscribable();
-    this.screenshareDelegate = new SubscribableDelegate<
-      MediaEntry[] | undefined
-    >(undefined);
+    this.screenshareDelegate = new SubscribableDelegate<MediaEntry | undefined>(
+      undefined,
+    );
     this.screenshare = this.screenshareDelegate.getSubscribable();
 
     const configuration = {
@@ -337,6 +337,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
         this.idParticipantMap,
         this.internalParticipantMap,
         this.presenterDelegate,
+        this.screenshareDelegate,
         mediaEntriesChannelLogger,
       );
 

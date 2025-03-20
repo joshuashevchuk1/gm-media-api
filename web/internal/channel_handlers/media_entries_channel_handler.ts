@@ -70,6 +70,9 @@ export class MediaEntriesChannelHandler {
     private readonly presenterDelegate: SubscribableDelegate<
       MediaEntry | undefined
     >,
+    private readonly screenshareDelegate: SubscribableDelegate<
+      MediaEntry | undefined
+    >,
     private readonly channelLogger?: ChannelLogger,
   ) {
     this.channel.onmessage = (event) => {
@@ -153,6 +156,10 @@ export class MediaEntriesChannelHandler {
         // Remove from maps
         this.idMediaEntryMap.delete(deletedResource.id);
         this.internalMediaEntryMap.delete(deletedMediaEntry);
+
+        if (this.screenshareDelegate.get() === deletedMediaEntry) {
+          this.screenshareDelegate.set(undefined);
+        }
         if (this.presenterDelegate.get() === deletedMediaEntry) {
           this.presenterDelegate.set(undefined);
         }
@@ -318,6 +325,14 @@ export class MediaEntriesChannelHandler {
         this.presenterDelegate.get() === mediaEntry
       ) {
         this.presenterDelegate.set(undefined);
+      }
+      if (resource.mediaEntry.screenshare) {
+        this.screenshareDelegate.set(mediaEntry);
+      } else if (
+        !resource.mediaEntry.screenshare &&
+        this.screenshareDelegate.get() === mediaEntry
+      ) {
+        this.screenshareDelegate.set(undefined);
       }
     });
 

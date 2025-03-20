@@ -64,7 +64,7 @@ export interface MeetMediaApiClient {
   /**
    * The screenshare in the meeting. Subscribable to changes in the screenshare.
    */
-  readonly screenshare: Subscribable<MediaEntry[] | undefined>;
+  readonly screenshare: Subscribable<MediaEntry | undefined>;
 
   /**
    * Joins the meeting.
