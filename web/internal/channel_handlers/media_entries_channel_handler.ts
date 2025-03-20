@@ -67,6 +67,9 @@ export class MediaEntriesChannelHandler {
       Participant,
       InternalParticipant
     >,
+    private readonly presenterDelegate: SubscribableDelegate<
+      MediaEntry | undefined
+    >,
     private readonly channelLogger?: ChannelLogger,
   ) {
     this.channel.onmessage = (event) => {
@@ -150,6 +153,9 @@ export class MediaEntriesChannelHandler {
         // Remove from maps
         this.idMediaEntryMap.delete(deletedResource.id);
         this.internalMediaEntryMap.delete(deletedMediaEntry);
+        if (this.presenterDelegate.get() === deletedMediaEntry) {
+          this.presenterDelegate.set(undefined);
+        }
       }
     });
 
@@ -304,6 +310,14 @@ export class MediaEntriesChannelHandler {
         const participantArray = this.participantsDelegate.get();
         this.participantsDelegate.set([...participantArray, newParticipant]);
         internalMediaEntry!.participant.set(newParticipant);
+      }
+      if (resource.mediaEntry.presenter) {
+        this.presenterDelegate.set(mediaEntry);
+      } else if (
+        !resource.mediaEntry.presenter &&
+        this.presenterDelegate.get() === mediaEntry
+      ) {
+        this.presenterDelegate.set(undefined);
       }
     });
 

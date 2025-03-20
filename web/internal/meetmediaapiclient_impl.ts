@@ -336,6 +336,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
         this.nameParticipantMap,
         this.idParticipantMap,
         this.internalParticipantMap,
+        this.presenterDelegate,
         mediaEntriesChannelLogger,
       );
 
