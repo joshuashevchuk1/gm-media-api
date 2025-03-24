@@ -14,9 +14,7 @@
 
 load("//:build_defs.bzl", "ts_library")
 
-package(default_visibility = [
-    "@media_api_samples//web:__subpackages__",
-])
+package(default_visibility = ["@media_api_samples//web:__subpackages__"])
 
 ts_library(
     name = "default_communication_protocol",
