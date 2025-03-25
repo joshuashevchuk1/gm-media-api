@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["@media_api_samples//cpp:__subpackages__"])
 
 cc_library(
     name = "media_api_client",
     srcs = ["media_api_client.cc"],
     hdrs = ["media_api_client.h"],
-    visibility = [
-        "@media_api_samples//cpp:__subpackages__",
-    ],
     deps = [
         ":conference_data_channel_interface",
         ":conference_media_tracks",
@@ -48,9 +45,6 @@ cc_library(
     name = "media_api_client_factory",
     srcs = ["media_api_client_factory.cc"],
     hdrs = ["media_api_client_factory.h"],
-    visibility = [
-        "@media_api_samples//cpp:__subpackages__",
-    ],
     deps = [
         ":conference_data_channel",
         ":conference_peer_connection",
@@ -127,7 +121,6 @@ cc_library(
 cc_library(
     name = "http_connector_interface",
     hdrs = ["http_connector_interface.h"],
-    visibility = ["@media_api_samples//native:__subpackages__"],
     deps = [
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -138,7 +131,6 @@ cc_library(
     name = "curl_connector",
     srcs = ["curl_connector.cc"],
     hdrs = ["curl_connector.h"],
-    visibility = ["@media_api_samples//native:__subpackages__"],
     deps = [
         ":curl_request",
         ":http_connector_interface",
@@ -169,7 +161,6 @@ cc_library(
     name = "curl_request",
     srcs = ["curl_request.cc"],
     hdrs = ["curl_request.h"],
-    visibility = ["@media_api_samples//native:__subpackages__"],
     deps = [
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",

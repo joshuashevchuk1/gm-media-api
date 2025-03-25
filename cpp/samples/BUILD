@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = [
-    "@media_api_samples//cpp:__subpackages__",
-])
+package(default_visibility = ["@media_api_samples//cpp:__subpackages__"])
 
 cc_binary(
     name = "multi_user_media_sample",
