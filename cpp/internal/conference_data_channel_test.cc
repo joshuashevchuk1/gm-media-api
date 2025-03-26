@@ -241,5 +241,17 @@ TEST(ConferenceDataChannelTest, ReceivingUpdateFailsWhenParsingFails) {
   EXPECT_THAT(message, HasSubstr("parsing-error"));
 }
 
+TEST(ConferenceDataChannelTest,
+     DestroyingConferenceDataChannelTearsDownChannel) {
+  auto data_channel = webrtc::MockDataChannelInterface::Create();
+  EXPECT_CALL(*data_channel, UnregisterObserver);
+  EXPECT_CALL(*data_channel, Close);
+
+  {
+    ConferenceDataChannel conference_data_channel(
+        std::make_unique<MockResourceHandler>(), std::move(data_channel));
+  }
+}
+
 }  // namespace
 }  // namespace meet

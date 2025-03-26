@@ -46,7 +46,10 @@ class ConferenceDataChannel : public ConferenceDataChannelInterface,
     data_channel_->RegisterObserver(this);
   };
 
-  ~ConferenceDataChannel() override { data_channel_->Close(); }
+  ~ConferenceDataChannel() override {
+    data_channel_->UnregisterObserver();
+    data_channel_->Close();
+  }
 
   // ConferenceDataChannel is neither copyable nor movable.
   ConferenceDataChannel(const ConferenceDataChannel&) = delete;
