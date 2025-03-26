@@ -97,10 +97,22 @@ class MultiUserMediaCollector : public meet::MediaApiClientObserverInterface {
         segment_gap_threshold_(segment_gap_threshold),
         collector_thread_(std::move(collector_thread)) {
     output_writer_provider_ = [](absl::string_view file_name) {
-      LOG(INFO) << "Creating output file: " << file_name;
-      return std::make_unique<OutputFile>(
-          std::ofstream(std::string(file_name),
-                        std::ios::binary | std::ios::out | std::ios::trunc));
+      std::ofstream file(std::string(file_name),
+                         std::ios::binary | std::ios::out | std::ios::trunc);
+      if (file.is_open()) {
+        LOG(INFO) << "Opened file: " << file_name;
+      } else {
+        // Files should normally open successfully.
+        //
+        // Potential causes for failure include:
+        // - The parent directory does not exist.
+        // - The system is out of disk space.
+        //
+        // If a file cannot be opened, the sample will still run, but written
+        // data will be lost.
+        LOG(ERROR) << "Failed to open file: " << file_name;
+      }
+      return std::make_unique<OutputFile>(std::move(file));
     };
     segment_renamer_ = [](absl::string_view tmp_file_name,
                           absl::string_view finished_file_name) {
