@@ -77,7 +77,8 @@ absl::StatusOr<std::string> CurlConnector::ConnectActiveConference(
 
   if (!json_request_response.is_object()) {
     return absl::UnknownError(
-        "Unparseable or non-json response from Meet servers.");
+        absl::StrCat("Unparseable or non-json response from Meet servers, ",
+                     curl_request.GetResponseData()));
   }
 
   if (const json* answer_field = FindOrNull(json_request_response, "answer");

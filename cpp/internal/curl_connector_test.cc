@@ -211,7 +211,7 @@ TEST(CurlConnectorTest, ReturnsErrorWhenResponseIsNotJson) {
 
   ASSERT_FALSE(response.ok());
   EXPECT_THAT(response.status().message(),
-              HasSubstr("Unparseable or non-json response from Meet servers."));
+              HasSubstr("Unparseable or non-json response from Meet servers"));
 }
 
 }  // namespace
