@@ -50,6 +50,7 @@ cc_library(
         ":conference_peer_connection",
         ":curl_connector",
         ":curl_request",
+        ":http_connector_interface",
         ":media_api_audio_device_module",
         ":media_api_client",
         ":media_entries_resource_handler",

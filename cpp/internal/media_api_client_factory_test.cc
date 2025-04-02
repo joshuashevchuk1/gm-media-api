@@ -24,7 +24,9 @@
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "cpp/api/media_api_client_interface.h"
+#include "cpp/internal/http_connector_interface.h"
 #include "cpp/internal/testing/mock_media_api_client_observer.h"
 #include "webrtc/api/data_channel_interface.h"
 #include "webrtc/api/make_ref_counted.h"
@@ -37,6 +39,7 @@
 #include "webrtc/api/test/mock_peer_connection_factory_interface.h"
 #include "webrtc/api/test/mock_peerconnectioninterface.h"
 #include "webrtc/api/test/mock_rtp_transceiver.h"
+#include "webrtc/rtc_base/thread.h"
 
 namespace meet {
 namespace {
@@ -44,6 +47,14 @@ namespace {
 using ::testing::_;
 using ::testing::Return;
 using ::testing::status::StatusIs;
+
+class MockHttpConnector : public HttpConnectorInterface {
+ public:
+  MOCK_METHOD(absl::StatusOr<std::string>, ConnectActiveConference,
+              (absl::string_view join_endpoint, absl::string_view conference_id,
+               absl::string_view access_token, absl::string_view sdp_offer),
+              (override));
+};
 
 TEST(MediaApiClientFactoryTest,
      SuccessfullyCreatesMediaApiClientWithAudioAndVideoStreams) {
@@ -98,8 +109,11 @@ TEST(MediaApiClientFactoryTest,
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
-
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -141,8 +155,12 @@ TEST(MediaApiClientFactoryTest, FailsIfPeerConnectionFactoryFailsToCreate) {
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -179,8 +197,12 @@ TEST(MediaApiClientFactoryTest, FailsIfAudioTransceiverFailsToBeCreated) {
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -230,8 +252,12 @@ TEST(MediaApiClientFactoryTest, FailsIfVideoTransceiverFailsToBeCreated) {
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -281,8 +307,12 @@ TEST(MediaApiClientFactoryTest,
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -337,7 +367,12 @@ TEST(MediaApiClientFactoryTest, FailsIfMediaStatsDataChannelFailsToBeCreated) {
     return peer_connection_factory;
   };
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
+
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -396,8 +431,12 @@ TEST(MediaApiClientFactoryTest,
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -460,8 +499,12 @@ TEST(MediaApiClientFactoryTest,
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{
@@ -528,8 +571,12 @@ TEST(MediaApiClientFactoryTest,
       -> rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> {
     return peer_connection_factory;
   };
+  MediaApiClientFactory::HttpConnectorProvider http_connector_provider = []() {
+    return std::make_unique<MockHttpConnector>();
+  };
+  MediaApiClientFactory factory(std::move(peer_connection_factory_provider),
+                                std::move(http_connector_provider));
 
-  MediaApiClientFactory factory(std::move(peer_connection_factory_provider));
   absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
       media_api_client_status = factory.CreateMediaApiClient(
           MediaApiClientConfiguration{

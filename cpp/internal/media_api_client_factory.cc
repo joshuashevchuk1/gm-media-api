@@ -16,7 +16,6 @@
 
 #include "cpp/internal/media_api_client_factory.h"
 
-#include <cstdint>
 #include <memory>
 #include <utility>
 
@@ -29,6 +28,7 @@
 #include "cpp/internal/conference_peer_connection.h"
 #include "cpp/internal/curl_connector.h"
 #include "cpp/internal/curl_request.h"
+#include "cpp/internal/http_connector_interface.h"
 #include "cpp/internal/media_api_audio_device_module.h"
 #include "cpp/internal/media_api_client.h"
 #include "cpp/internal/media_entries_resource_handler.h"
@@ -216,6 +216,9 @@ MediaApiClientFactory::MediaApiClientFactory() {
             webrtc::Dav1dDecoderTemplateAdapter>>(),
         /*audio_mixer=*/nullptr, /*audio_processing=*/nullptr);
   };
+  http_connector_provider_ = []() {
+    return std::make_unique<CurlConnector>(std::make_unique<CurlApiWrapper>());
+  };
 }
 
 absl::StatusOr<std::unique_ptr<MediaApiClientInterface>>
@@ -248,8 +251,8 @@ MediaApiClientFactory::CreateMediaApiClient(
       peer_connection_factory = peer_connection_factory_provider_(
           signaling_thread.get(), worker_thread.get());
 
-  auto curl_connector =
-      std::make_unique<CurlConnector>(std::make_unique<CurlApiWrapper>());
+  std::unique_ptr<HttpConnectorInterface> curl_connector =
+      http_connector_provider_();
   auto conference_peer_connection = std::make_unique<ConferencePeerConnection>(
       std::move(signaling_thread), std::move(curl_connector));
   auto peer_connection_status =
