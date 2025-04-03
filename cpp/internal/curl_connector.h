@@ -18,6 +18,7 @@
 #define CPP_INTERNAL_CURL_CONNECTOR_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -39,8 +40,19 @@ class CurlConnector : public HttpConnectorInterface {
       absl::string_view join_endpoint, absl::string_view conference_id,
       absl::string_view access_token, absl::string_view sdp_offer) override;
 
+  // Sets the path to the CA certificate file to be used by curl.
+  //
+  // This value will be set as the `CURLOPT_CAINFO` option when making requests
+  // using this connector.
+  //
+  // If this is not set, curl will use the default CA certificates.
+  void SetCaCertPath(absl::string_view ca_cert_path) {
+    ca_cert_path_ = std::string(ca_cert_path);
+  }
+
  private:
   std::unique_ptr<CurlApiWrapper> curl_api_wrapper_;
+  std::optional<std::string> ca_cert_path_;
 };
 
 }  // namespace meet

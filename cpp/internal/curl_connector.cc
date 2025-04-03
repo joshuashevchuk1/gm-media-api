@@ -55,6 +55,9 @@ absl::StatusOr<std::string> CurlConnector::ConnectActiveConference(
                                 "application/json;charset=UTF-8");
   curl_request.SetRequestHeader("Authorization",
                                 absl::StrCat("Bearer ", access_token));
+  if (ca_cert_path_.has_value()) {
+    curl_request.SetCaCertPath(*ca_cert_path_);
+  }
 
   nlohmann::basic_json<> offer_json;
   offer_json["offer"] = sdp_offer;

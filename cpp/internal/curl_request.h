@@ -27,13 +27,14 @@
 // It's just for making requests.
 
 #include <cstdint>
-#include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/strings/cord.h"
+#include "absl/strings/string_view.h"
 #include <curl/curl.h>
 #include <curl/curl.h>
 
@@ -115,6 +116,9 @@ class CurlRequest {
   void SetRequestMethod(Method method) {
     request_parameters_.request_method = RequestMethodToCurlOption(method);
   };
+  void SetCaCertPath(absl::string_view ca_cert_path) {
+    ca_cert_path_ = std::string(ca_cert_path);
+  }
 
  private:
   static CURLoption RequestMethodToCurlOption(Method method) {
@@ -140,6 +144,7 @@ class CurlRequest {
   RequestParameters request_parameters_;
   std::string error_message_;
   CurlApiWrapper& curl_api_;
+  std::optional<std::string> ca_cert_path_;
 };
 
 }  // namespace meet

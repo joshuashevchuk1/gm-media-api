@@ -72,7 +72,13 @@ TEST(CurlConnectorTest, PopulatesRequest) {
             body = value;
             return CURLE_OK;
           });
+  EXPECT_CALL(*mock_curl_api,
+              EasySetOptStr(_, CURLOPT_CAINFO, "some_ca_cert_path"))
+      .WillOnce([](CURL* curl, CURLoption option, const std::string& value) {
+        return CURLE_OK;
+      });
   CurlConnector curl_connector(std::move(mock_curl_api));
+  curl_connector.SetCaCertPath("some_ca_cert_path");
 
   curl_connector
       .ConnectActiveConference("https://meet.googleapis.com", "abcdefg",

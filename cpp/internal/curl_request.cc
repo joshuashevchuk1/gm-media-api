@@ -18,7 +18,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string>
 
 #include "absl/cleanup/cleanup.h"
@@ -85,14 +84,14 @@ absl::Status CurlRequest::Send() {
 
   absl::Cleanup cleanup_headers = [&] { curl_api_.SListFreeAll(headers); };
 
-  if (auto opt_status =
+  if (absl::Status opt_status =
           CheckOk(curl_api_.EasySetOptPtr(curl, CURLOPT_HTTPHEADER, headers),
                   "http header");
       !opt_status.ok()) {
     return opt_status;
   }
 
-  if (auto opt_status = CheckOk(
+  if (absl::Status opt_status = CheckOk(
           curl_api_.EasySetOptInt(curl, request_parameters_.request_method, 1),
           "http method");
       !opt_status.ok()) {
@@ -103,7 +102,7 @@ absl::Status CurlRequest::Send() {
     return absl::InvalidArgumentError("Request URL is empty");
   }
 
-  if (auto opt_status = CheckOk(
+  if (absl::Status opt_status = CheckOk(
           curl_api_.EasySetOptStr(curl, CURLOPT_URL, request_parameters_.url),
           "url");
       !opt_status.ok()) {
@@ -114,7 +113,7 @@ absl::Status CurlRequest::Send() {
     return absl::InvalidArgumentError("Request body is empty");
   }
 
-  if (auto opt_status =
+  if (absl::Status opt_status =
           CheckOk(curl_api_.EasySetOptStr(curl, CURLOPT_POSTFIELDS,
                                           request_parameters_.body),
                   "request body");
@@ -122,18 +121,28 @@ absl::Status CurlRequest::Send() {
     return opt_status;
   }
 
-  if (auto opt_status = CheckOk(curl_api_.EasySetOptCallback(
-                                    curl, CURLOPT_WRITEFUNCTION, &OnCurlWrite),
-                                "write function");
+  if (absl::Status opt_status =
+          CheckOk(curl_api_.EasySetOptCallback(curl, CURLOPT_WRITEFUNCTION,
+                                               &OnCurlWrite),
+                  "write function");
       !opt_status.ok()) {
     return opt_status;
   }
 
-  if (auto opt_status = CheckOk(
+  if (absl::Status opt_status = CheckOk(
           curl_api_.EasySetOptPtr(curl, CURLOPT_WRITEDATA, &response_data_),
           "write data");
       !opt_status.ok()) {
     return opt_status;
+  }
+
+  if (ca_cert_path_.has_value()) {
+    if (absl::Status opt_status = CheckOk(
+            curl_api_.EasySetOptStr(curl, CURLOPT_CAINFO, *ca_cert_path_),
+            "ca cert path");
+        !opt_status.ok()) {
+      return opt_status;
+    }
   }
 
   CURLcode send_result = curl_api_.EasyPerform(curl);

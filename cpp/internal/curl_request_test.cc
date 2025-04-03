@@ -185,6 +185,32 @@ TEST(CurlRequestTest, FailureToSetCurlWriteDataReturnsError) {
               HasSubstr("Failed to set curl write data"));
 }
 
+TEST(CurlRequestTest, FailureToSetCurlCaCertReturnsError) {
+  MockCurlApiWrapper mock_curl_api;
+  EXPECT_CALL(mock_curl_api, EasySetOptPtr(_, CURLOPT_HTTPHEADER, _))
+      .WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptInt).WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptStr).WillRepeatedly(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptCallback(_, CURLOPT_WRITEFUNCTION, _))
+      .WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptPtr(_, CURLOPT_WRITEDATA, _))
+      .WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptStr(_, CURLOPT_CAINFO, _))
+      .WillOnce(Return(CURLE_UNKNOWN_OPTION));
+  CurlRequest request(mock_curl_api);
+  request.SetRequestUrl("www.this_is_sparta.com");
+  request.SetRequestHeader("Authorization", "Bearer iliketurtles");
+  request.SetRequestHeader("Content-Type", "application/json");
+  request.SetRequestBody("{\"offer\": \"some random sdp offer\"}");
+  request.SetCaCertPath("some/path/to/ca/cert");
+
+  absl::Status request_status = request.Send();
+
+  EXPECT_EQ(request_status.code(), absl::StatusCode::kInternal);
+  EXPECT_THAT(request_status.message(),
+              HasSubstr("Failed to set curl ca cert path"));
+}
+
 TEST(CurlRequestTest, FailureToPerformCurlRequestReturnsError) {
   MockCurlApiWrapper mock_curl_api;
   EXPECT_CALL(mock_curl_api, EasySetOptPtr(_, CURLOPT_HTTPHEADER, _))
@@ -241,6 +267,41 @@ TEST(CurlRequestTest, ResponseDataStoresResponse) {
 
   EXPECT_TRUE(request_status.ok());
   EXPECT_EQ(request.GetResponseData(), response);
+}
+
+TEST(CurlRequestTest, CurlCaCertPathIsSet) {
+  MockCurlApiWrapper mock_curl_api;
+  EXPECT_CALL(mock_curl_api, EasySetOptPtr(_, CURLOPT_HTTPHEADER, _))
+      .WillOnce([](CURL* curl, CURLoption option, void* value) {
+        auto headers_list = static_cast<struct curl_slist*>(value);
+        EXPECT_THAT(headers_list->data,
+                    StrEq("Authorization: Bearer iliketurtles"));
+        return CURLE_OK;
+      });
+  EXPECT_CALL(mock_curl_api, EasySetOptInt).WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptStr).WillRepeatedly(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptCallback(_, CURLOPT_WRITEFUNCTION, _))
+      .WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasySetOptStr(_, CURLOPT_CAINFO, _))
+      .WillOnce(Return(CURLE_OK));
+  EXPECT_CALL(mock_curl_api, EasyPerform).WillOnce(Return(CURLE_OK));
+
+  absl::Cord response("the answer to life is 42");
+  EXPECT_CALL(mock_curl_api, EasySetOptPtr(_, CURLOPT_WRITEDATA, _))
+      .WillOnce([&response](CURL* curl, CURLoption option, void* value) {
+        absl::Cord* str_response = reinterpret_cast<absl::Cord*>(value);
+        *str_response = response;
+        return CURLE_OK;
+      });
+  CurlRequest request(mock_curl_api);
+  request.SetRequestUrl("www.this_is_sparta.com");
+  request.SetRequestHeader("Authorization", "Bearer iliketurtles");
+  request.SetRequestBody("{\"offer\": \"some random sdp offer\"}");
+  request.SetCaCertPath("some/path/to/ca/cert");
+
+  absl::Status request_status = request.Send();
+
+  EXPECT_TRUE(request_status.ok());
 }
 
 TEST(CurlRequestTest, ReusedRequestReturnsError) {
