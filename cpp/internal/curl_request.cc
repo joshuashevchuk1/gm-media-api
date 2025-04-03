@@ -61,21 +61,17 @@ absl::Status CheckOk(CURLcode code, absl::string_view option) {
 }  // namespace
 
 absl::Status CurlRequest::Send() {
-  if (curl_api_ == nullptr) {
-    return absl::InternalError("Curl is null");
-  }
-
   if (!response_data_.empty()) {
     return absl::InternalError(
         "Request object has already been used for another curl request");
   }
 
-  CURL* curl = curl_api_->EasyInit();
+  CURL* curl = curl_api_.EasyInit();
   if (curl == nullptr) {
     return absl::InternalError("Failed to initialize curl");
   }
 
-  absl::Cleanup cleanup_curl = [&] { curl_api_->EasyCleanup(curl); };
+  absl::Cleanup cleanup_curl = [&] { curl_api_.EasyCleanup(curl); };
 
   if (request_parameters_.headers.empty()) {
     return absl::InvalidArgumentError("Request headers are empty");
@@ -84,20 +80,20 @@ absl::Status CurlRequest::Send() {
   struct curl_slist* headers = nullptr;
   for (const auto& header : request_parameters_.headers) {
     std::string formatted_request_header = header.first + ": " + header.second;
-    headers = curl_api_->SListAppend(headers, formatted_request_header.c_str());
+    headers = curl_api_.SListAppend(headers, formatted_request_header.c_str());
   }
 
-  absl::Cleanup cleanup_headers = [&] { curl_api_->SListFreeAll(headers); };
+  absl::Cleanup cleanup_headers = [&] { curl_api_.SListFreeAll(headers); };
 
   if (auto opt_status =
-          CheckOk(curl_api_->EasySetOptPtr(curl, CURLOPT_HTTPHEADER, headers),
+          CheckOk(curl_api_.EasySetOptPtr(curl, CURLOPT_HTTPHEADER, headers),
                   "http header");
       !opt_status.ok()) {
     return opt_status;
   }
 
   if (auto opt_status = CheckOk(
-          curl_api_->EasySetOptInt(curl, request_parameters_.request_method, 1),
+          curl_api_.EasySetOptInt(curl, request_parameters_.request_method, 1),
           "http method");
       !opt_status.ok()) {
     return opt_status;
@@ -108,7 +104,7 @@ absl::Status CurlRequest::Send() {
   }
 
   if (auto opt_status = CheckOk(
-          curl_api_->EasySetOptStr(curl, CURLOPT_URL, request_parameters_.url),
+          curl_api_.EasySetOptStr(curl, CURLOPT_URL, request_parameters_.url),
           "url");
       !opt_status.ok()) {
     return opt_status;
@@ -119,14 +115,14 @@ absl::Status CurlRequest::Send() {
   }
 
   if (auto opt_status =
-          CheckOk(curl_api_->EasySetOptStr(curl, CURLOPT_POSTFIELDS,
-                                           request_parameters_.body),
+          CheckOk(curl_api_.EasySetOptStr(curl, CURLOPT_POSTFIELDS,
+                                          request_parameters_.body),
                   "request body");
       !opt_status.ok()) {
     return opt_status;
   }
 
-  if (auto opt_status = CheckOk(curl_api_->EasySetOptCallback(
+  if (auto opt_status = CheckOk(curl_api_.EasySetOptCallback(
                                     curl, CURLOPT_WRITEFUNCTION, &OnCurlWrite),
                                 "write function");
       !opt_status.ok()) {
@@ -134,13 +130,13 @@ absl::Status CurlRequest::Send() {
   }
 
   if (auto opt_status = CheckOk(
-          curl_api_->EasySetOptPtr(curl, CURLOPT_WRITEDATA, &response_data_),
+          curl_api_.EasySetOptPtr(curl, CURLOPT_WRITEDATA, &response_data_),
           "write data");
       !opt_status.ok()) {
     return opt_status;
   }
 
-  CURLcode send_result = curl_api_->EasyPerform(curl);
+  CURLcode send_result = curl_api_.EasyPerform(curl);
   if (send_result != CURLE_OK) {
     return absl::InternalError(absl::StrCat("Curl failed easy perform: ",
                                             curl_easy_strerror(send_result)));

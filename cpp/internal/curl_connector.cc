@@ -49,7 +49,7 @@ absl::StatusOr<std::string> CurlConnector::ConnectActiveConference(
 
   VLOG(1) << "Connecting to " << full_join_endpoint;
 
-  CurlRequest curl_request(std::move(curl_api_wrapper_));
+  CurlRequest curl_request(*curl_api_wrapper_);
   curl_request.SetRequestUrl(std::move(full_join_endpoint));
   curl_request.SetRequestHeader("Content-Type",
                                 "application/json;charset=UTF-8");

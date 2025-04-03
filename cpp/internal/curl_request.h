@@ -98,8 +98,7 @@ class CurlRequest {
     kPut,
   };
 
-  explicit CurlRequest(std::unique_ptr<CurlApiWrapper> curl_api)
-      : curl_api_(std::move(curl_api)) {};
+  explicit CurlRequest(CurlApiWrapper& curl_api) : curl_api_(curl_api) {};
 
   absl::Status Send();
 
@@ -140,7 +139,7 @@ class CurlRequest {
   absl::Cord response_data_;
   RequestParameters request_parameters_;
   std::string error_message_;
-  std::unique_ptr<CurlApiWrapper> curl_api_;
+  CurlApiWrapper& curl_api_;
 };
 
 }  // namespace meet
