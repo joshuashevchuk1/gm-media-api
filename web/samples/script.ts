@@ -15,31 +15,38 @@
  */
 
 import {MeetMediaApiClientImpl} from '../internal/meetmediaapiclient_impl';
-import {MeetConnectionState} from '../types/enums';
+import {MeetSessionStatus} from '../types/enums';
 import {MeetStreamTrack} from '../types/mediatypes';
-import {MeetSessionStatus} from '../types/meetmediaapiclient';
 
 // Function maps session status to strings. If the session is joined, we go
 // ahead and request a layout.
 async function handleSessionChange(status: MeetSessionStatus) {
   let statusString;
-  switch (status.connectionState) {
-    case MeetConnectionState.WAITING:
+  switch (status) {
+    case MeetSessionStatus.WAITING:
       statusString = 'WAITING';
       break;
-    case MeetConnectionState.JOINED:
+    case MeetSessionStatus.JOINED:
       statusString = 'JOINED';
       // tslint:disable-next-line:no-any
       const client = (window as any).client;
       const mediaLayout = client.createMediaLayout({width: 500, height: 500});
       const response = await client.applyLayout([{mediaLayout}]);
-      console.log(response);
+      //console.log('Received response: ', response);
+      //await client.injectAudioOnceFromPath('./test.m4a'); // Add this line
+      //console.log('should have injected audio');
       break;
-    case MeetConnectionState.DISCONNECTED:
+    case MeetSessionStatus.DISCONNECTED:
       statusString = 'DISCONNECTED';
       break;
+    case MeetSessionStatus.KICKED:
+      statusString = 'KICKED';
+      break;
+    case MeetSessionStatus.REJECTED:
+      statusString = 'REJECT';
+      break;
     default:
-      statusString = 'UNKNOWN';
+      statusString = 'NEW';
       break;
   }
   // Update page with session status.
@@ -57,8 +64,17 @@ const trackIdToElementId = new Map<string, number>();
 // Called when the Meet stream collection changes (when a Media track is added
 // to or removed from the peer connection).
 function handleStreamChange(meetStreamTracks: MeetStreamTrack[]) {
+  const client = (window as any).client; // Access client from the global window object
+
+  // Now you can use 'client' in your function
+  if (!client) {
+    console.error('Client not found');
+    return;
+  }
+
   // We create local sets of ids so that we don't have to add back ids when
   // tracks are removed.
+  console.log('Received stream: ', meetStreamTracks);
   const localAvailableVideoIds = new Set(VIDEO_IDS);
   const localAvailableAudioIds = new Set(AUDIO_IDS);
   meetStreamTracks.forEach((meetStreamTrack: MeetStreamTrack) => {
@@ -103,6 +119,8 @@ function handleStreamChange(meetStreamTracks: MeetStreamTrack[]) {
       const mediaStream = new MediaStream();
       mediaStream.addTrack(meetStreamTrack.mediaStreamTrack);
 
+
+
       // Update id collections. We do expect to run out of available ids, but
       // reassign to a valid id (1) in case we do.
       const audioId = availableAudioIds.pop() ?? 1;
@@ -116,9 +134,17 @@ function handleStreamChange(meetStreamTracks: MeetStreamTrack[]) {
     }
   });
 
+  console.log('Piping out audio: ');
+  const webSocketUrl = 'ws://localhost:8765'; // Replace with your actual WebSocket URL
+  client.pipeRemoteAudioToWebSocket(webSocketUrl, meetStreamTracks.at(1));
+  console.log('Audio pipped out out audio: ');
+
   // Set local set of tracks to top level available id collections.
   availableVideoIds = [...localAvailableVideoIds];
   availableAudioIds = [...localAvailableAudioIds];
+  console.log('Available video ids:', availableVideoIds);
+  console.log('Available audio ids:', availableAudioIds);
+
 }
 
 /**
@@ -141,6 +167,7 @@ export function createClient(
   (window as any).client = client;
   client.sessionStatus.subscribe(handleSessionChange);
   client.meetStreamTracks.subscribe(handleStreamChange);
+
   console.log('Media API Client created.');
 }
 

@@ -19,7 +19,7 @@ import {
   MediaApiCommunicationResponse,
 } from '../types/communication_protocol';
 import {MediaApiResponseStatus} from '../types/datachannels';
-import {MeetConnectionState} from '../types/enums';
+import {MeetSessionStatus} from '../types/enums';
 import {
   CanvasDimensions,
   MediaEntry,
@@ -29,10 +29,7 @@ import {
   MeetStreamTrack,
   Participant,
 } from '../types/mediatypes';
-import {
-  MeetMediaApiClient,
-  MeetSessionStatus,
-} from '../types/meetmediaapiclient';
+import {MeetMediaApiClient} from '../types/meetmediaapiclient';
 import {Subscribable} from '../types/subscribable';
 import {ChannelLogger} from './channel_handlers/channel_logger';
 import {MediaEntriesChannelHandler} from './channel_handlers/media_entries_channel_handler';
@@ -83,6 +80,13 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   private readonly screenshareDelegate: SubscribableDelegate<
     MediaEntry | undefined
   >;
+
+  // @ts-ignore
+  private _audioWebSocket?: WebSocket;
+  // @ts-ignore
+  private _audioProcessor?: ScriptProcessorNode;
+  // @ts-ignore
+  private _audioContext?: AudioContext;
 
   private readonly peerConnection: RTCPeerConnection;
 
@@ -152,9 +156,9 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
   ) {
     this.validateConfiguration();
 
-    this.sessionStatusDelegate = new SubscribableDelegate<MeetSessionStatus>({
-      connectionState: MeetConnectionState.UNKNOWN,
-    });
+    this.sessionStatusDelegate = new SubscribableDelegate<MeetSessionStatus>(
+      MeetSessionStatus.NEW,
+    );
     this.sessionStatus = this.sessionStatusDelegate.getSubscribable();
     this.meetStreamTracksDelegate = new SubscribableDelegate<MeetStreamTrack[]>(
       [],
@@ -366,7 +370,7 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     }
 
     this.sessionStatusDelegate.subscribe((status) => {
-      if (status.connectionState === MeetConnectionState.DISCONNECTED) {
+      if (status === MeetSessionStatus.DISCONNECTED) {
         this.mediaStatsChannel?.close();
         this.videoAssignmentChannel?.close();
         this.mediaEntriesChannel?.close();
@@ -461,4 +465,63 @@ export class MeetMediaApiClientImpl implements MeetMediaApiClient {
     this.mediaLayoutId++;
     return mediaLayout;
   }
+
+  public async injectAudioOnceFromPath(relativePath: string): Promise<void> {
+    console.log("Entering injectAudioOnceFromPath");
+
+    const audioContext = new AudioContext();
+
+    const response = await fetch(relativePath);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+
+    const destination = audioContext.createMediaStreamDestination();
+    source.connect(destination);
+    source.start(0);
+
+    const [track] = destination.stream.getAudioTracks();
+    this.peerConnection.addTrack(track, destination.stream);
+
+    // 🔊 Play audio locally on <audio id="audio-1">
+    const audioElement = document.getElementById('audio-1') as HTMLAudioElement;
+    if (audioElement) {
+      audioElement.srcObject = destination.stream;
+      audioElement.autoplay = true;
+      audioElement.muted = false;
+      audioElement.play().catch((err) =>
+          console.error("Failed to play audio-1:", err)
+      );
+    } else {
+      console.warn("Element with id 'audio-1' not found");
+    }
+
+    console.log("Leaving injectAudioOnceFromPath");
+  }
+
+  public async pipeRemoteAudioToWebSocket(webSocketUrl: string, remoteMediaStream: MediaStream) {
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(remoteMediaStream);
+    const processor = audioContext.createScriptProcessor(4096, 1, 1);
+    const socket = new WebSocket(webSocketUrl);
+    socket.binaryType = 'arraybuffer';
+
+    processor.onaudioprocess = (event) => {
+      if (socket.readyState === WebSocket.OPEN) {
+        const input = event.inputBuffer.getChannelData(0);
+        const floatBuffer = new Float32Array(input);
+        socket.send(floatBuffer.buffer);
+      }
+    };
+
+    source.connect(processor);
+    processor.connect(audioContext.destination);
+
+    this._audioWebSocket = socket;
+    this._audioProcessor = processor;
+    this._audioContext = audioContext;
+  }
 }
+

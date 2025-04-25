@@ -31,6 +31,5 @@ ts_library(
         "@media_api_samples//web/internal:meetmediaapiclient_impl",
         "@media_api_samples//web/types:enums",
         "@media_api_samples//web/types:media_types",
-        "@media_api_samples//web/types:meetmediaapiclient_interface",
     ],
 )
